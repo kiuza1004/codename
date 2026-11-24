@@ -3,6 +3,7 @@ import { CardItem, CardType, Difficulty, GameMode, GamePhase, GameStats, Hint, T
 import { ALL_CODENAME_WORDS } from '../data/words';
 import { PICTURE_CARDS } from '../data/pictures';
 import { generateSpymasterHint } from '../utils/spymasterAi';
+import { AgentCareerStats, loadCareerStats, saveCareerStats } from '../constants/version';
 import { sound } from '../utils/audio';
 import { speech } from '../utils/speech';
 import confetti from 'canvas-confetti';
@@ -15,12 +16,12 @@ export function useCodenames() {
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
   const [playerTeam, setPlayerTeam] = useState<TeamColor>('red');
   const [cards, setCards] = useState<CardItem[]>(() => {
-    // 최초 접속 시에도 빈 화면이 나오지 않도록 기본 25장 낱말 카드 사전 배치
     return ALL_CODENAME_WORDS.slice(0, 25).map((word, idx) => ({
       id: idx,
       word,
       type: idx < 9 ? 'red' : idx < 17 ? 'blue' : idx < 24 ? 'neutral' : 'assassin',
       revealed: false,
+      marked: false,
       mode: 'word',
     }));
   });
@@ -35,15 +36,17 @@ export function useCodenames() {
   const [ttsEnabled, setTtsEnabled] = useState<boolean>(true);
   const [isListening, setIsListening] = useState<boolean>(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [combo, setCombo] = useState<number>(0);
+  const [career, setCareer] = useState<AgentCareerStats>(() => loadCareerStats());
 
   const [stats, setStats] = useState<GameStats>({
     turnsTaken: 0,
     correctGuesses: 0,
     wrongGuesses: 0,
     startTime: Date.now(),
+    maxCombo: 0,
   });
 
-  // 사운드/TTS 설정 동기화
   useEffect(() => {
     sound.enabled = soundEnabled;
   }, [soundEnabled]);
@@ -52,10 +55,40 @@ export function useCodenames() {
     speech.ttsEnabled = ttsEnabled;
   }, [ttsEnabled]);
 
-  // 남은 카드 개수 계산
   const opponentTeam: TeamColor = playerTeam === 'red' ? 'blue' : 'red';
   const playerRemaining = cards.filter(c => c.type === playerTeam && !c.revealed).length;
   const opponentRemaining = cards.filter(c => c.type === opponentTeam && !c.revealed).length;
+
+  // 커리어 전적 업데이트 헬퍼
+  const recordGameOutcome = useCallback((isWin: boolean, correctCount: number) => {
+    setCareer(prev => {
+      const nextWins = isWin ? prev.wins + 1 : prev.wins;
+      const nextStreak = isWin ? prev.currentStreak + 1 : 0;
+      const updated: AgentCareerStats = {
+        gamesPlayed: prev.gamesPlayed + 1,
+        wins: nextWins,
+        currentStreak: nextStreak,
+        bestStreak: Math.max(prev.bestStreak, nextStreak),
+        totalCorrect: prev.totalCorrect + correctCount,
+      };
+      saveCareerStats(updated);
+      return updated;
+    });
+  }, []);
+
+  // 후보 카드 핀 마킹(Tactical Mark) 토글
+  const toggleMarkCard = useCallback((cardId: number) => {
+    sound.playHover();
+    setCards(prev =>
+      prev.map(c => (c.id === cardId && !c.revealed ? { ...c, marked: !c.marked } : c))
+    );
+  }, []);
+
+  // 모든 후보 핀 마킹 초기화
+  const clearAllMarks = useCallback(() => {
+    sound.playHover();
+    setCards(prev => prev.map(c => (c.marked ? { ...c, marked: false } : c)));
+  }, []);
 
   // 최근 사용된 단어들 피해서 25장 무작위 카드 추출
   const pick25Words = useCallback((): string[] => {
@@ -67,17 +100,14 @@ export function useCodenames() {
       recentWords = [];
     }
 
-    // 최근 단어가 아닌 단어 우선 선별
     const freshWords = ALL_CODENAME_WORDS.filter(w => !recentWords.includes(w));
     let pool = [...freshWords];
 
-    // 만약 남은 단어가 25개 미만이면 전체 풀 사용
     if (pool.length < 25) {
       pool = [...ALL_CODENAME_WORDS];
       recentWords = [];
     }
 
-    // Fisher-Yates 셔플
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -85,7 +115,6 @@ export function useCodenames() {
 
     const selected = pool.slice(0, 25);
 
-    // 최근 단어 히스토리 업데이트 (최대 50개 유지)
     try {
       const updated = Array.from(new Set([...selected, ...recentWords])).slice(0, 75);
       sessionStorage.setItem(RECENT_WORDS_KEY, JSON.stringify(updated));
@@ -96,34 +125,31 @@ export function useCodenames() {
     return selected;
   }, []);
 
-  // 카드 섞고 게임 시작 (모드: 낱말 카드 or 그림 카드)
+  // 카드 섞고 게임 시작
   const startGame = useCallback((selectedDiff: Difficulty, selectedTeam: TeamColor, selectedMode: GameMode = 'word') => {
     setIsShuffling(true);
     sound.playCardFlip();
     speech.cancelSpeech();
+    hasTriggeredFirstHint.current = false;
 
     setTimeout(() => {
-      // 카드 구성 분기: 그림 모드 20장 (5x4) vs 낱말 모드 25장 (5x5)
       const types: CardType[] = [];
       const otherTeam: CardType = selectedTeam === 'red' ? 'blue' : 'red';
 
       if (selectedMode === 'picture') {
-        // [그림판 정식 규칙: 5x4 = 20장]
-        // 선공 8장, 후공 7장, 민간인 4장, 암살자 1장 = 총 20장
+        // 그림판 정식 규칙: 5x4 = 20장 (선공 8, 후공 7, 민간인 4, 암살자 1)
         for (let i = 0; i < 8; i++) types.push(selectedTeam);
         for (let i = 0; i < 7; i++) types.push(otherTeam);
         for (let i = 0; i < 4; i++) types.push('neutral');
         types.push('assassin');
       } else {
-        // [낱말판 정식 규칙: 5x5 = 25장]
-        // 선공 9장, 후공 8장, 민간인 7장, 암살자 1장 = 총 25장
+        // 낱말판 정식 규칙: 5x5 = 25장 (선공 9, 후공 8, 민간인 7, 암살자 1)
         for (let i = 0; i < 9; i++) types.push(selectedTeam);
         for (let i = 0; i < 8; i++) types.push(otherTeam);
         for (let i = 0; i < 7; i++) types.push('neutral');
         types.push('assassin');
       }
 
-      // 타입 배열 셔플
       for (let i = types.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [types[i], types[j]] = [types[j], types[i]];
@@ -132,7 +158,6 @@ export function useCodenames() {
       let initialCards: CardItem[] = [];
 
       if (selectedMode === 'picture') {
-        // 그림 카드 20장 셔플 추출 (5x4)
         const shuffledPics = [...PICTURE_CARDS];
         for (let i = shuffledPics.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -145,18 +170,19 @@ export function useCodenames() {
           word: pic.title,
           type: types[idx],
           revealed: false,
+          marked: false,
           mode: 'picture',
           svgIcon: pic.svg,
           keywords: [...pic.keywords, ...pic.categories, ...pic.hints],
         }));
       } else {
-        // 낱말 카드 25장 추출 (5x5)
         const words = pick25Words();
         initialCards = words.map((word, idx) => ({
           id: idx,
           word,
           type: types[idx],
           revealed: false,
+          marked: false,
           mode: 'word',
         }));
       }
@@ -169,53 +195,57 @@ export function useCodenames() {
       setCurrentHint(null);
       setHintHistory([]);
       setGuessesLeft(0);
+      setCombo(0);
       setStats({
         turnsTaken: 1,
         correctGuesses: 0,
         wrongGuesses: 0,
         startTime: Date.now(),
+        maxCombo: 0,
       });
 
       setIsShuffling(false);
       setPhase('playing');
       setTurn('spymaster_thinking');
-      setStatusMessage('스파이마스터 AI가 전술 키카드를 분석 중입니다...');
+      setStatusMessage('Argon 스파이마스터 AI가 전술 키카드를 분석 중입니다...');
     }, 500);
   }, [pick25Words]);
 
-  // 스파이마스터 AI 힌트 생성 트리거
-  const triggerSpymasterHint = useCallback((currentCards: CardItem[]) => {
+  // 스파이마스터 AI 힌트 생성 트리거 (이미 사용된 힌트 제외)
+  const triggerSpymasterHint = useCallback((currentCards: CardItem[], existingHistory: Hint[]) => {
     setTurn('spymaster_thinking');
-    setStatusMessage('팀장 AI가 최적의 힌트를 도출하고 있습니다...');
+    setStatusMessage('팀장 AI가 최적의 시맨틱 힌트를 도출하고 있습니다...');
 
     setTimeout(() => {
-      const hint = generateSpymasterHint(currentCards, playerTeam, difficulty);
-      const hintWithTurn = { ...hint, turnNumber: stats.turnsTaken };
+      const usedWords = existingHistory.map(h => h.word);
+      const hint = generateSpymasterHint(currentCards, playerTeam, difficulty, usedWords);
+      const hintWithTurn = { ...hint, turnNumber: existingHistory.length + 1 };
       setCurrentHint(hintWithTurn);
       setHintHistory(prev => [...prev, hintWithTurn]);
-      const availableGuesses = hint.count + 1; // 코드네임 공식 규칙: 힌트 개수 + 1회까지 추측 가능
+      const availableGuesses = hint.count + 1;
       setGuessesLeft(availableGuesses);
       setTurn('player_turn');
-      setStatusMessage(`팀장 힌트: "${hint.word}" (${hint.count}장). 목표 카드를 지목하십시오.`);
+      setStatusMessage(`암호 힌트가 도착했습니다. 목표 카드(${hint.count}장)를 추리하여 지목하십시오.`);
 
       sound.playHintBeep();
       const teamLabel = playerTeam === 'red' ? '레드' : '블루';
       speech.speakHint(teamLabel, hint.word, hint.count);
     }, 300);
-  }, [playerTeam, difficulty, stats.turnsTaken]);
+  }, [playerTeam, difficulty]);
 
   // 게임 시작 시 첫 번째 힌트 자동 생성
   const hasTriggeredFirstHint = useRef(false);
   useEffect(() => {
     if (phase === 'playing' && turn === 'spymaster_thinking' && !hasTriggeredFirstHint.current && cards.length > 0) {
       hasTriggeredFirstHint.current = true;
-      triggerSpymasterHint(cards);
+      triggerSpymasterHint(cards, []);
     }
   }, [phase, turn, cards, triggerSpymasterHint]);
 
   // 상대팀(AI) 턴 시뮬레이션
-  const handleOpponentTurn = useCallback((updatedCards: CardItem[]) => {
+  const handleOpponentTurn = useCallback((updatedCards: CardItem[], currentHistory: Hint[]) => {
     setTurn('opponent_turn');
+    setCombo(0);
     speech.cancelSpeech();
     setStatusMessage('상대 팀(AI)이 작전을 수행 중입니다...');
 
@@ -224,26 +254,27 @@ export function useCodenames() {
 
     setTimeout(() => {
       if (oppCards.length === 0) {
-        // 상대 승리
         setWinner(oppTeam);
         setPhase('gameover');
         sound.playAssassin();
+        recordGameOutcome(false, stats.correctGuesses);
         return;
       }
 
-      // 난이도에 따른 상대팀 획득 카드 수
       let revealCount = 1;
       if (difficulty === 'hard' && Math.random() < 0.6 && oppCards.length >= 2) {
         revealCount = 2;
       } else if (difficulty === 'easy' && Math.random() < 0.4) {
-        revealCount = 0; // 초급에서는 상대팀이 가끔 아무것도 못 맞춤
+        revealCount = 0;
       }
 
       let nextCards = [...updatedCards];
       if (revealCount > 0) {
         const toReveal = oppCards.slice(0, revealCount);
         const revealIds = new Set(toReveal.map(c => c.id));
-        nextCards = nextCards.map(c => revealIds.has(c.id) ? { ...c, revealed: true } : c);
+        nextCards = nextCards.map(c =>
+          revealIds.has(c.id) ? { ...c, revealed: true, marked: false, revealedBy: 'opponent' } : c
+        );
         sound.playOpponentHit();
         setStatusMessage(`상대 팀이 요원 [${toReveal.map(c => c.word).join(', ')}]을(를) 확보했습니다!`);
       } else {
@@ -252,23 +283,22 @@ export function useCodenames() {
 
       setCards(nextCards);
 
-      // 상대팀 승리 여부 재확인
       const remainingOpp = nextCards.filter(c => c.type === oppTeam && !c.revealed).length;
       if (remainingOpp === 0) {
         setWinner(oppTeam);
         setPhase('gameover');
         sound.playAssassin();
         setStatusMessage('상대 팀이 모든 요원을 먼저 확보하여 작전에서 패배했습니다.');
+        recordGameOutcome(false, stats.correctGuesses);
         return;
       }
 
-      // 다시 플레이어 턴으로 전환
       setTimeout(() => {
         setStats(prev => ({ ...prev, turnsTaken: prev.turnsTaken + 1 }));
-        triggerSpymasterHint(nextCards);
+        triggerSpymasterHint(nextCards, currentHistory);
       }, 1200);
     }, 1400);
-  }, [playerTeam, difficulty, triggerSpymasterHint]);
+  }, [playerTeam, difficulty, triggerSpymasterHint, recordGameOutcome, stats.correctGuesses]);
 
   // 카드 선택 (지목) 처리
   const selectCard = useCallback((cardId: number) => {
@@ -279,39 +309,50 @@ export function useCodenames() {
 
     sound.playCardFlip();
 
-    const updatedCards = cards.map(c => c.id === cardId ? { ...c, revealed: true } : c);
+    const updatedCards = cards.map(c =>
+      c.id === cardId ? { ...c, revealed: true, marked: false, revealedBy: 'player' as const } : c
+    );
     setCards(updatedCards);
 
-    // 1. 암살자(Assassin) 밟음 -> 즉시 패배
+    // 1. 암살자(Assassin) -> 즉시 패배
     if (targetCard.type === 'assassin') {
       sound.playAssassin();
+      setCombo(0);
       setWinner('assassin_loss');
       setPhase('gameover');
       setStatusMessage(`암살자 [${targetCard.word}] 카드를 건드렸습니다! 작전 실패 (게임 오버)`);
-      speech.speakText("암살자 카드를 건드렸습니다. 작전 실패입니다.");
+      speech.speakText('암살자 카드를 건드렸습니다. 작전 실패입니다.');
       setStats(prev => ({ ...prev, wrongGuesses: prev.wrongGuesses + 1, endTime: Date.now() }));
+      recordGameOutcome(false, stats.correctGuesses);
       return;
     }
 
     // 2. 우리 팀 카드 적중!
     if (targetCard.type === playerTeam) {
       sound.playCorrect();
-      setStats(prev => ({ ...prev, correctGuesses: prev.correctGuesses + 1 }));
+      const nextCombo = combo + 1;
+      setCombo(nextCombo);
+      const nextCorrect = stats.correctGuesses + 1;
+      setStats(prev => ({
+        ...prev,
+        correctGuesses: nextCorrect,
+        maxCombo: Math.max(prev.maxCombo || 0, nextCombo),
+      }));
 
       const remainingTeam = updatedCards.filter(c => c.type === playerTeam && !c.revealed).length;
       if (remainingTeam === 0) {
-        // 플레이어 승리!
         setWinner(playerTeam);
         setPhase('gameover');
         sound.playVictory();
         confetti({
           particleCount: 150,
           spread: 90,
-          origin: { y: 0.6 }
+          origin: { y: 0.6 },
         });
         setStatusMessage('축하합니다! 모든 아군 요원을 구출하여 작전에 승리했습니다!');
-        speech.speakText("축하합니다! 모든 요원을 구출하여 승리했습니다.");
+        speech.speakText('축하합니다! 모든 요원을 구출하여 승리했습니다.');
         setStats(prev => ({ ...prev, endTime: Date.now() }));
+        recordGameOutcome(true, nextCorrect);
         return;
       }
 
@@ -319,19 +360,22 @@ export function useCodenames() {
       setGuessesLeft(nextGuesses);
 
       if (nextGuesses <= 0) {
-        setStatusMessage(`정답! 지목 기회를 모두 소진했습니다. 상대 턴으로 넘어갑니다.`);
-        handleOpponentTurn(updatedCards);
+        setStatusMessage('정답! 이번 턴 지목 기회를 모두 사용했습니다. 상대 턴으로 넘어갑니다.');
+        handleOpponentTurn(updatedCards, hintHistory);
       } else {
-        setStatusMessage(`정답입니다! "${targetCard.word}"는 아군 요원입니다. (남은 지목 기회: ${nextGuesses}회)`);
+        setStatusMessage(
+          `정답! "${targetCard.word}" 아군 요원 접선 성공! ${nextCombo >= 2 ? `(🔥 ${nextCombo}연속 적중!)` : ''} [남은 지목: ${nextGuesses}회]`
+        );
       }
       return;
     }
 
-    // 3. 상대 팀 카드 선택 -> 턴 종료 & 상대 점수
+    // 3. 상대 팀 카드 선택 -> 턴 종료
     if (targetCard.type === opponentTeam) {
       sound.playOpponentHit();
+      setCombo(0);
       setStats(prev => ({ ...prev, wrongGuesses: prev.wrongGuesses + 1 }));
-      setStatusMessage(`오답! 상대 팀 카드 "${targetCard.word}"를 밝혔습니다. 턴이 강제 종료됩니다.`);
+      setStatusMessage(`오답! 상대 팀 요원 "${targetCard.word}"입니다. 턴이 강제 종료됩니다.`);
       speech.speakText(`상대 팀 요원 ${targetCard.word}입니다. 턴이 종료됩니다.`);
 
       const remainingOpp = updatedCards.filter(c => c.type === opponentTeam && !c.revealed).length;
@@ -339,36 +383,36 @@ export function useCodenames() {
         setWinner(opponentTeam);
         setPhase('gameover');
         sound.playAssassin();
+        recordGameOutcome(false, stats.correctGuesses);
         return;
       }
 
-      handleOpponentTurn(updatedCards);
+      handleOpponentTurn(updatedCards, hintHistory);
       return;
     }
 
     // 4. 중립 민간인(Neutral) 선택 -> 턴 종료
     if (targetCard.type === 'neutral') {
       sound.playNeutral();
+      setCombo(0);
       setStats(prev => ({ ...prev, wrongGuesses: prev.wrongGuesses + 1 }));
       setStatusMessage(`민간인 "${targetCard.word}"입니다. 턴이 종료됩니다.`);
-      speech.speakText(`민간인입니다. 턴이 종료됩니다.`);
-      handleOpponentTurn(updatedCards);
+      speech.speakText('민간인입니다. 턴이 종료됩니다.');
+      handleOpponentTurn(updatedCards, hintHistory);
     }
-  }, [phase, turn, guessesLeft, cards, playerTeam, opponentTeam, handleOpponentTurn]);
+  }, [phase, turn, guessesLeft, cards, playerTeam, opponentTeam, combo, stats.correctGuesses, hintHistory, handleOpponentTurn, recordGameOutcome]);
 
   // 단어명 또는 키워드로 카드 선택 (텍스트 입력 및 음성 인식용)
   const selectCardByWord = useCallback((wordInput: string) => {
     const cleaned = wordInput.trim().replace(/\s+/g, '');
     if (!cleaned) return false;
 
-    // 1. 단어명 직접 일치 검사
     const matched = cards.find(c => !c.revealed && c.word.replace(/\s+/g, '') === cleaned);
     if (matched) {
       selectCard(matched.id);
       return true;
     }
 
-    // 2. 그림 카드 키워드 일치 검사 (예: 그림 카드가 "로켓 고래"일 때 "로켓" 또는 "고래"로 지목)
     const keywordMatched = cards.find(c => {
       if (c.revealed) return false;
       if (c.keywords && c.keywords.some(kw => kw.replace(/\s+/g, '') === cleaned || cleaned.includes(kw))) {
@@ -382,8 +426,7 @@ export function useCodenames() {
       return true;
     }
 
-    // 3. 부분 일치 탐색 (예: "사과야" -> "사과")
-    const partialMatch = cards.find(c => !c.revealed && (cleaned.includes(c.word) || c.word.includes(cleaned)));
+    const partialMatch = cards.find(c => !c.revealed && (cleaned.includes(c.word.replace(/\s+/g, '')) || c.word.replace(/\s+/g, '').includes(cleaned)));
     if (partialMatch) {
       selectCard(partialMatch.id);
       return true;
@@ -397,10 +440,10 @@ export function useCodenames() {
     if (phase !== 'playing' || turn !== 'player_turn') return;
     sound.playHover();
     setStatusMessage('턴을 넘겼습니다. 상대 팀의 턴입니다.');
-    handleOpponentTurn(cards);
-  }, [phase, turn, cards, handleOpponentTurn]);
+    handleOpponentTurn(cards, hintHistory);
+  }, [phase, turn, cards, hintHistory, handleOpponentTurn]);
 
-  // 음성 인식 시작 토글
+  // 음성 인식 토글
   const toggleVoiceInput = useCallback(() => {
     if (isListening) {
       speech.stopListening();
@@ -449,6 +492,8 @@ export function useCodenames() {
     playerRemaining,
     opponentRemaining,
     stats,
+    combo,
+    career,
     soundEnabled,
     setSoundEnabled,
     ttsEnabled,
@@ -458,6 +503,8 @@ export function useCodenames() {
     startGame,
     selectCard,
     selectCardByWord,
+    toggleMarkCard,
+    clearAllMarks,
     passTurn,
     toggleVoiceInput,
     resetToSetup,

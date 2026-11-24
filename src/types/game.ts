@@ -9,6 +9,7 @@ export interface CardItem {
   type: CardType;
   revealed: boolean;
   marked?: boolean;
+  revealedBy?: 'player' | 'opponent';
   mode?: GameMode;
   imageUrl?: string;
   svgIcon?: string;
@@ -21,6 +22,9 @@ export interface Hint {
   targetWords?: string[];
   explanation?: string;
   turnNumber?: number;
+  confidence?: number;
+  safetyLevel?: 'SAFE' | 'OPTIMAL' | 'CAUTION';
+  coachingTip?: string;
 }
 
 export type GamePhase = 'setup' | 'playing' | 'gameover';
@@ -32,4 +36,5 @@ export interface GameStats {
   wrongGuesses: number;
   startTime: number;
   endTime?: number;
+  maxCombo?: number;
 }

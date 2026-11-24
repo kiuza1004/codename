@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Hint, TeamColor, TurnPhase } from '../types/game';
-import { Bot, Radio, Target, History, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bot, Radio, Target, History, ChevronDown, ChevronUp, Flame, ShieldCheck } from 'lucide-react';
 
 interface SpymasterPanelProps {
   currentHint: Hint | null;
@@ -8,6 +8,7 @@ interface SpymasterPanelProps {
   turn: TurnPhase;
   playerTeam: TeamColor;
   statusMessage: string;
+  combo?: number;
 }
 
 export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
@@ -15,6 +16,7 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
   turn,
   playerTeam,
   statusMessage,
+  combo = 0,
 }) => {
   const [showHistory, setShowHistory] = useState(false);
 
@@ -26,7 +28,7 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-2 my-1">
-      {/* 2번 화면 - 1. [맨 위] 이전 힌트 기록 패널 */}
+      {/* 2번 화면 - ① [맨 위] 이전 힌트 기록 패널 */}
       <div className="w-full rounded-2xl border border-slate-700/70 bg-[#121725]/95 backdrop-blur-md p-2.5 sm:p-3.5 shadow-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -63,7 +65,16 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
                 <div key={i} className="bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-mono text-[11px]">#{i + 1}턴</span>
                   <span className="font-bold text-cyan-300">"{h.word}"</span>
-                  <span className="font-mono text-amber-300 font-bold bg-amber-950/50 px-2 py-0.5 rounded border border-amber-500/40 text-[11px]">{h.count}장</span>
+                  <div className="flex items-center gap-1.5">
+                    {h.confidence && (
+                      <span className="text-[9px] font-mono text-emerald-400 hidden sm:inline">
+                        {h.confidence}%
+                      </span>
+                    )}
+                    <span className="font-mono text-amber-300 font-bold bg-amber-950/50 px-2 py-0.5 rounded border border-amber-500/40 text-[11px]">
+                      {h.count}장
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -71,9 +82,9 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
         )}
       </div>
 
-      {/* 2번 화면 - 2. [바로 아래] 팀장 힌트 패널 (카드 바로 위에 배치) */}
+      {/* 2번 화면 - ② [바로 아래] 팀장 힌트 패널 (카드 바로 위에 위치) */}
       <div className="w-full rounded-2xl border border-slate-700/70 bg-[#121725]/95 backdrop-blur-md p-2.5 sm:p-3.5 shadow-md">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <div className="relative shrink-0">
               <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center border ${
@@ -87,21 +98,33 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
             </div>
 
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-mono font-bold tracking-wider text-slate-200">팀장 힌트</span>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-bold border ${
                   playerTeam === 'red' ? 'bg-red-950/80 border-red-500/40 text-red-300' : 'bg-blue-950/80 border-blue-500/40 text-blue-300'
                 }`}>
                   {teamLabel}
                 </span>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono text-cyan-400 bg-cyan-950/50 px-2 py-0.5 rounded-full border border-cyan-500/30">
+                  <ShieldCheck className="w-3 h-3" />
+                  ARGON AI ENGINE
+                </span>
               </div>
               <div className="text-xs text-slate-300 font-medium flex items-center gap-1.5 mt-0.5">
                 {isThinking && <span className="text-cyan-400 flex items-center gap-1"><Radio className="w-3.5 h-3.5 animate-spin" /> 팀장 AI가 새 암호단어를 연산 중...</span>}
                 {isOpponentTurn && <span className="text-amber-400 flex items-center gap-1"><Radio className="w-3.5 h-3.5 animate-pulse" /> 상대 팀 요원 행동 중...</span>}
-                {isPlayerTurn && <span className="text-emerald-400 flex items-center gap-1"><Target className="w-3.5 h-3.5" /> {statusMessage}</span>}
+                {isPlayerTurn && <span className="text-emerald-400 flex items-center gap-1"><Target className="w-3.5 h-3.5 shrink-0" /> <span>{statusMessage}</span></span>}
               </div>
             </div>
           </div>
+
+          {/* 연속 정답 콤보 배지 (2콤보 이상 시 활성화) */}
+          {combo >= 2 && (
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 to-red-500/20 border border-amber-500/50 text-amber-300 text-xs font-mono font-black animate-bounce">
+              <Flame className="w-3.5 h-3.5 text-amber-400" />
+              <span>{combo} COMBO!</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
