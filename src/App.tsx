@@ -61,20 +61,22 @@ export const App: React.FC = () => {
       />
 
       {/* 메인 작전 구역 (시원하고 자연스러운 스크롤 레이아웃) */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6 flex flex-col justify-between gap-4">
-        {/* 스파이마스터 팀장 브리핑 전광판 */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-3 sm:py-5 flex flex-col justify-between gap-3 sm:gap-4">
+        {/* 스파이마스터 팀장 상태 패널 */}
         <SpymasterPanel
           currentHint={currentHint}
           hintHistory={hintHistory}
           turn={turn}
           playerTeam={playerTeam}
-          guessesLeft={guessesLeft}
           statusMessage={statusMessage}
         />
 
-        {/* 실제 코드네임 카드 그리드 (낱말 5x5 25장 / 그림 5x4 20장) */}
+        {/* 🎯 낱말카드 바로 위에서 보이는 직속 암호단어 바 + 실제 카드 그리드 (낱말 5x5 / 그림 5x4) */}
         <CardGrid
           cards={cards}
+          currentHint={currentHint}
+          guessesLeft={guessesLeft}
+          playerTeam={playerTeam}
           onSelectCard={selectCard}
           disabled={!isPlayerActionAllowed}
         />
