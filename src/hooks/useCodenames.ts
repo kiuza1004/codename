@@ -94,13 +94,25 @@ export function useCodenames() {
     speech.cancelSpeech();
 
     setTimeout(() => {
-      // 플레이어 팀이 항상 선공(9장)으로 시작하여 주도적인 플레이 연습을 지원
+      // 카드 구성 분기: 그림 모드 20장 (5x4) vs 낱말 모드 25장 (5x5)
       const types: CardType[] = [];
-      for (let i = 0; i < 9; i++) types.push(selectedTeam);
       const otherTeam: CardType = selectedTeam === 'red' ? 'blue' : 'red';
-      for (let i = 0; i < 8; i++) types.push(otherTeam);
-      for (let i = 0; i < 7; i++) types.push('neutral');
-      types.push('assassin'); // 1장
+
+      if (selectedMode === 'picture') {
+        // [그림판 정식 규칙: 5x4 = 20장]
+        // 선공 8장, 후공 7장, 민간인 4장, 암살자 1장 = 총 20장
+        for (let i = 0; i < 8; i++) types.push(selectedTeam);
+        for (let i = 0; i < 7; i++) types.push(otherTeam);
+        for (let i = 0; i < 4; i++) types.push('neutral');
+        types.push('assassin');
+      } else {
+        // [낱말판 정식 규칙: 5x5 = 25장]
+        // 선공 9장, 후공 8장, 민간인 7장, 암살자 1장 = 총 25장
+        for (let i = 0; i < 9; i++) types.push(selectedTeam);
+        for (let i = 0; i < 8; i++) types.push(otherTeam);
+        for (let i = 0; i < 7; i++) types.push('neutral');
+        types.push('assassin');
+      }
 
       // 타입 배열 셔플
       for (let i = types.length - 1; i > 0; i--) {
@@ -111,13 +123,13 @@ export function useCodenames() {
       let initialCards: CardItem[] = [];
 
       if (selectedMode === 'picture') {
-        // 그림 카드 25장 셔플 추출
+        // 그림 카드 20장 셔플 추출 (5x4)
         const shuffledPics = [...PICTURE_CARDS];
         for (let i = shuffledPics.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [shuffledPics[i], shuffledPics[j]] = [shuffledPics[j], shuffledPics[i]];
         }
-        const selectedPics = shuffledPics.slice(0, 25);
+        const selectedPics = shuffledPics.slice(0, 20);
 
         initialCards = selectedPics.map((pic, idx) => ({
           id: idx,
@@ -129,7 +141,7 @@ export function useCodenames() {
           keywords: [...pic.keywords, ...pic.categories, ...pic.hints],
         }));
       } else {
-        // 낱말 카드 25장 추출
+        // 낱말 카드 25장 추출 (5x5)
         const words = pick25Words();
         initialCards = words.map((word, idx) => ({
           id: idx,

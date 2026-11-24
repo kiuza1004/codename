@@ -44,8 +44,8 @@ export const App: React.FC = () => {
   const isPlayerActionAllowed = phase === 'playing' && turn === 'player_turn' && guessesLeft > 0;
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] w-full bg-[#0b0e14] text-slate-100 flex flex-col justify-between overflow-hidden selection:bg-cyan-500 selection:text-white font-spy">
-      {/* 상단 기밀 HUD 헤더 (고정 슬림 바) */}
+    <div className="min-h-screen w-full bg-[#0b0e14] text-slate-100 flex flex-col justify-between selection:bg-cyan-500 selection:text-white font-spy">
+      {/* 상단 기밀 HUD 헤더 */}
       <Header
         playerTeam={playerTeam}
         difficulty={difficulty}
@@ -60,21 +60,19 @@ export const App: React.FC = () => {
         onReset={resetToSetup}
       />
 
-      {/* 메인 작전 구역 (화면 높이에 맞춰 세로 스크롤 없이 100% 핏) */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-1.5 sm:px-3 py-1 sm:py-2 flex flex-col justify-between gap-1 sm:gap-2 min-h-0 overflow-hidden">
+      {/* 메인 작전 구역 */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-2 sm:px-4 py-2 sm:py-4 flex flex-col justify-between gap-3">
         {/* 스파이마스터 팀장 브리핑 전광판 */}
-        <div className="flex-shrink-0">
-          <SpymasterPanel
-            currentHint={currentHint}
-            hintHistory={hintHistory}
-            turn={turn}
-            playerTeam={playerTeam}
-            guessesLeft={guessesLeft}
-            statusMessage={statusMessage}
-          />
-        </div>
+        <SpymasterPanel
+          currentHint={currentHint}
+          hintHistory={hintHistory}
+          turn={turn}
+          playerTeam={playerTeam}
+          guessesLeft={guessesLeft}
+          statusMessage={statusMessage}
+        />
 
-        {/* 5x5 실제 코드네임 카드 그리드 (25장 전체 기기 맞춤 뷰) */}
+        {/* 실제 코드네임 카드 그리드 (낱말 5x5 25장 / 그림 5x4 20장) */}
         <CardGrid
           cards={cards}
           onSelectCard={selectCard}
@@ -82,16 +80,14 @@ export const App: React.FC = () => {
         />
 
         {/* 하단 입력 컨트롤 (음성 인식 + 텍스트 타이핑 + 턴 패스) */}
-        <div className="flex-shrink-0">
-          <ActionControls
-            onSelectByWord={selectCardByWord}
-            onPassTurn={passTurn}
-            onToggleVoice={toggleVoiceInput}
-            isListening={isListening}
-            voiceError={voiceError}
-            disabled={!isPlayerActionAllowed}
-          />
-        </div>
+        <ActionControls
+          onSelectByWord={selectCardByWord}
+          onPassTurn={passTurn}
+          onToggleVoice={toggleVoiceInput}
+          isListening={isListening}
+          voiceError={voiceError}
+          disabled={!isPlayerActionAllowed}
+        />
       </main>
 
       {/* 푸터: 슬림 한 줄 바 */}
@@ -120,13 +116,14 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 게임 오버 결과 모달 (승리/패배 + 전체 비밀 키카드 복기 맵) */}
+      {/* 게임 오버 결과 모달 (승리/패배 + 전체 비밀 키카드 복기 맵 + 힌트 의도 복기) */}
       {phase === 'gameover' && (
         <GameOverModal
           winner={winner}
           playerTeam={playerTeam}
           cards={cards}
           stats={stats}
+          hintHistory={hintHistory}
           onRestart={resetToSetup}
         />
       )}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CardItem } from '../types/game';
 import { sound } from '../utils/audio';
-import { Skull, User, ShieldAlert, CheckCircle2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { Skull, User, ShieldAlert, CheckCircle2, ZoomIn, ZoomOut, Maximize2, Shuffle } from 'lucide-react';
 
 interface CardGridProps {
   cards: CardItem[];
@@ -29,28 +29,40 @@ export const CardGrid: React.FC<CardGridProps> = ({ cards, onSelectCard, disable
   };
 
   const isPictureMode = cards.length > 0 && cards[0].mode === 'picture';
+  const totalCount = cards.length;
+  const gridLayoutLabel = isPictureMode ? '5×4 (20장 그림판)' : '5×5 (25장 낱말판)';
+
+  if (!cards || cards.length === 0) {
+    return (
+      <div className="w-full min-h-[300px] flex flex-col items-center justify-center p-8 bg-slate-900/40 border border-slate-800 rounded-3xl text-slate-400">
+        <Shuffle className="w-8 h-8 text-cyan-400 animate-spin mb-3" />
+        <p className="text-base font-bold text-white">카드를 셔플하고 있습니다...</p>
+        <p className="text-xs text-slate-500 mt-1">잠시 후 작전 보드가 펼쳐집니다.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full flex-1 flex flex-col justify-center gap-1 sm:gap-2 my-1 min-h-0">
+    <div className="w-full flex flex-col gap-2 my-2">
       {/* 줌 컨트롤러 툴바: 기기 화면 맞춤 및 확대/축소 */}
-      <div className="w-full flex items-center justify-between px-1 text-xs select-none flex-shrink-0">
-        <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[10px] sm:text-[11px]">
+      <div className="w-full flex items-center justify-between px-1 text-xs select-none">
+        <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-          <span>5×5 보드 ({isPictureMode ? '그림 카드' : '낱말 카드'} 25장 전체 뷰)</span>
+          <span>작전 보드: <strong className="text-slate-200">{gridLayoutLabel}</strong> ({totalCount}장)</span>
         </div>
 
         {/* 조작 버튼 그룹 */}
-        <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-xl p-0.5 sm:p-1 shadow-sm">
+        <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-xl p-1 shadow-sm">
           <button
             type="button"
             onClick={handleZoomOut}
             title="축소"
             className="p-1 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white transition-all"
           >
-            <ZoomOut className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <ZoomOut className="w-3.5 h-3.5" />
           </button>
 
-          <span className="text-[10px] sm:text-[11px] font-mono font-bold text-cyan-400 px-1 min-w-[38px] text-center">
+          <span className="text-[11px] font-mono font-bold text-cyan-400 px-1.5 min-w-[40px] text-center">
             {zoomLevel}%
           </span>
 
@@ -60,23 +72,23 @@ export const CardGrid: React.FC<CardGridProps> = ({ cards, onSelectCard, disable
             title="확대"
             className="p-1 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white transition-all"
           >
-            <ZoomIn className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <ZoomIn className="w-3.5 h-3.5" />
           </button>
 
           <button
             type="button"
             onClick={handleZoomReset}
             title="화면 맞춤 (기본 뷰)"
-            className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[9px] sm:text-[10px] font-mono border border-slate-700 transition-all ml-0.5"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-mono border border-slate-700 transition-all ml-0.5"
           >
-            <Maximize2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400" />
+            <Maximize2 className="w-3 h-3 text-cyan-400" />
             <span>화면 맞춤</span>
           </button>
         </div>
       </div>
 
-      {/* 가로/세로 스크롤 컨테이너 (확대 시 자유로운 터치 스크롤 지원, 기본 100%일 때는 한 화면에 꼭 맞춤) */}
-      <div className="w-full flex-1 overflow-auto scrollbar-thin scrollbar-thumb-slate-700 select-none flex items-center justify-center p-0.5">
+      {/* 가로 스크롤 컨테이너 (확대 시 스크롤 허용, 100%일 때는 100% 폭 고정) */}
+      <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700 select-none">
         <div
           style={{
             width: zoomLevel === 100 ? '100%' : `${zoomLevel}%`,
@@ -85,15 +97,15 @@ export const CardGrid: React.FC<CardGridProps> = ({ cards, onSelectCard, disable
           }}
           className="mx-auto"
         >
-          {/* 가로 5장 x 세로 5장 고정 그리드 */}
-          <div className="grid grid-cols-5 gap-1 sm:gap-2 md:gap-2.5">
+          {/* 가로 5장 고정 그리드: 낱말 카드는 5x5(25장), 그림 카드는 5x4(20장) */}
+          <div className="grid grid-cols-5 gap-1.5 sm:gap-2.5 md:gap-3">
             {cards.map((card) => {
               const isClickable = !card.revealed && !disabled;
 
               return (
                 <div
                   key={card.id}
-                  className="perspective-1000 h-14 sm:h-20 md:h-24 lg:h-28 select-none"
+                  className="perspective-1000 h-20 sm:h-24 md:h-28 lg:h-32 select-none"
                   onMouseEnter={() => {
                     if (isClickable) sound.playHover();
                   }}
@@ -102,33 +114,33 @@ export const CardGrid: React.FC<CardGridProps> = ({ cards, onSelectCard, disable
                     onClick={() => {
                       if (isClickable) onSelectCard(card.id);
                     }}
-                    className={`relative w-full h-full duration-500 transform-style-preserve-3d transition-transform cursor-pointer rounded-xl sm:rounded-2xl shadow-sm ${
-                      card.revealed ? 'rotate-y-180' : isClickable ? 'hover:-translate-y-0.5 hover:shadow-cyan-500/20 active:scale-95' : 'opacity-80 cursor-not-allowed'
+                    className={`relative w-full h-full duration-500 transform-style-preserve-3d transition-transform cursor-pointer rounded-xl sm:rounded-2xl shadow-md ${
+                      card.revealed ? 'rotate-y-180' : isClickable ? 'hover:-translate-y-1 hover:shadow-cyan-500/20 active:scale-95' : 'opacity-80 cursor-not-allowed'
                     }`}
                   >
                     {/* 앞면 (미공개 상태: 낱말 카드 or 그림 카드) */}
-                    <div className="absolute inset-0 backface-hidden rounded-xl sm:rounded-2xl border border-slate-700/80 bg-gradient-to-b from-[#1e2738] to-[#141b28] p-1 sm:p-1.5 flex flex-col justify-between items-center transition-all group overflow-hidden shadow-inner">
+                    <div className="absolute inset-0 backface-hidden rounded-xl sm:rounded-2xl border border-slate-700/80 bg-gradient-to-b from-[#1e2738] to-[#141b28] p-1.5 sm:p-2 flex flex-col justify-between items-center transition-all group overflow-hidden shadow-inner">
                       {/* 상단 번호 및 보조 타이틀 */}
                       <div className="w-full flex justify-between items-center opacity-40 group-hover:opacity-70 transition-opacity">
-                        <span className="text-[7px] sm:text-[9px] font-mono truncate max-w-[70%]">
+                        <span className="text-[8px] sm:text-[10px] font-mono truncate max-w-[70%]">
                           {card.mode === 'picture' ? 'PICTURE' : card.word}
                         </span>
-                        <span className="text-[7px] sm:text-[9px] font-mono text-slate-500">#{card.id + 1}</span>
+                        <span className="text-[8px] sm:text-[10px] font-mono text-slate-500">#{card.id + 1}</span>
                       </div>
 
                       {/* 중앙 내용: 그림 모드 vs 낱말 모드 */}
                       {card.mode === 'picture' && card.svgIcon ? (
                         <div className="flex-1 w-full flex flex-col items-center justify-center p-0.5 overflow-hidden">
                           <div
-                            className="w-8 h-8 sm:w-12 sm:h-12 md:w-14 md:h-14 text-slate-200 group-hover:text-cyan-300 transition-colors drop-shadow"
+                            className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 text-slate-200 group-hover:text-cyan-300 transition-colors drop-shadow"
                             dangerouslySetInnerHTML={{ __html: card.svgIcon }}
                           />
-                          <span className="text-[9px] sm:text-xs font-bold text-slate-400 group-hover:text-cyan-200 tracking-tight truncate w-full text-center mt-0.5">
+                          <span className="text-[9px] sm:text-xs font-bold text-slate-300 group-hover:text-cyan-200 tracking-tight truncate w-full text-center mt-1">
                             {card.word}
                           </span>
                         </div>
                       ) : (
-                        <div className="my-auto py-0.5 text-center w-full px-0.5 flex items-center justify-center">
+                        <div className="my-auto py-1 text-center w-full px-1 flex items-center justify-center">
                           <span className="text-xs sm:text-base md:text-xl font-black tracking-tight sm:tracking-wide text-slate-100 group-hover:text-cyan-300 transition-colors drop-shadow truncate w-full">
                             {card.word}
                           </span>
@@ -137,9 +149,9 @@ export const CardGrid: React.FC<CardGridProps> = ({ cards, onSelectCard, disable
 
                       {/* 하단 데코 라인 */}
                       <div className="w-full flex justify-center items-center gap-1 opacity-20">
-                        <div className="h-[1px] w-4 sm:w-6 bg-slate-500 rounded-full"></div>
+                        <div className="h-[1.5px] w-4 sm:w-8 bg-slate-500 rounded-full"></div>
                         <div className="w-1 h-1 rounded-full bg-cyan-400"></div>
-                        <div className="h-[1px] w-4 sm:w-6 bg-slate-500 rounded-full"></div>
+                        <div className="h-[1.5px] w-4 sm:w-8 bg-slate-500 rounded-full"></div>
                       </div>
 
                       {/* 호버 테두리 */}
@@ -148,7 +160,7 @@ export const CardGrid: React.FC<CardGridProps> = ({ cards, onSelectCard, disable
 
                     {/* 뒷면 (공개 상태: 정체 공개) */}
                     <div
-                      className={`absolute inset-0 backface-hidden rotate-y-180 rounded-xl sm:rounded-2xl p-1 sm:p-1.5 flex flex-col justify-between items-center shadow-lg border ${
+                      className={`absolute inset-0 backface-hidden rotate-y-180 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 flex flex-col justify-between items-center shadow-lg border ${
                         card.type === 'red'
                           ? 'bg-gradient-to-br from-red-600 to-red-800 border-red-400 text-white shadow-red-900/40'
                           : card.type === 'blue'
@@ -159,7 +171,7 @@ export const CardGrid: React.FC<CardGridProps> = ({ cards, onSelectCard, disable
                       }`}
                     >
                       {/* 상단 레이블 */}
-                      <div className="w-full flex justify-between items-center text-[7px] sm:text-[9px] font-mono uppercase tracking-wider font-bold opacity-80">
+                      <div className="w-full flex justify-between items-center text-[8px] sm:text-[10px] font-mono uppercase tracking-wider font-bold opacity-80">
                         <span className="truncate">
                           {card.type === 'red' && 'RED AGENT'}
                           {card.type === 'blue' && 'BLUE AGENT'}
@@ -170,13 +182,13 @@ export const CardGrid: React.FC<CardGridProps> = ({ cards, onSelectCard, disable
                       </div>
 
                       {/* 중앙 아이콘 & 단어 */}
-                      <div className="flex flex-col items-center justify-center gap-0.5">
-                        {card.type === 'red' && <ShieldAlert className="w-4 h-4 sm:w-6 sm:h-6 text-red-200 animate-pulse" />}
-                        {card.type === 'blue' && <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6 text-blue-200 animate-pulse" />}
-                        {card.type === 'neutral' && <User className="w-4 h-4 sm:w-6 sm:h-6 text-amber-800" />}
-                        {card.type === 'assassin' && <Skull className="w-4 h-4 sm:w-6 sm:h-6 text-red-500 animate-bounce" />}
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        {card.type === 'red' && <ShieldAlert className="w-5 h-5 sm:w-7 sm:h-7 text-red-200 animate-pulse" />}
+                        {card.type === 'blue' && <CheckCircle2 className="w-5 h-5 sm:w-7 sm:h-7 text-blue-200 animate-pulse" />}
+                        {card.type === 'neutral' && <User className="w-5 h-5 sm:w-7 sm:h-7 text-amber-800" />}
+                        {card.type === 'assassin' && <Skull className="w-5 h-5 sm:w-7 sm:h-7 text-red-500 animate-bounce" />}
 
-                        <span className={`text-[10px] sm:text-xs md:text-sm font-black tracking-tight truncate max-w-full ${
+                        <span className={`text-[11px] sm:text-xs md:text-sm font-black tracking-tight truncate max-w-full ${
                           card.type === 'neutral' ? 'text-amber-950' : card.type === 'assassin' ? 'text-red-400' : 'text-white'
                         }`}>
                           {card.word}
@@ -184,7 +196,7 @@ export const CardGrid: React.FC<CardGridProps> = ({ cards, onSelectCard, disable
                       </div>
 
                       {/* 하단 상태 표식 */}
-                      <div className={`text-[6px] sm:text-[8px] font-mono uppercase font-bold px-1 py-0.2 rounded border ${
+                      <div className={`text-[7px] sm:text-[9px] font-mono uppercase font-bold px-1.5 py-0.2 rounded border ${
                         card.type === 'neutral'
                           ? 'border-amber-400/60 bg-amber-200/50 text-amber-900'
                           : card.type === 'assassin'
