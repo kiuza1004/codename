@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { CardItem, CardType, Difficulty, GamePhase, GameStats, Hint, TeamColor, TurnPhase } from '../types/game';
+import { CardItem, CardType, Difficulty, GameMode, GamePhase, GameStats, Hint, TeamColor, TurnPhase } from '../types/game';
 import { ALL_CODENAME_WORDS } from '../data/words';
+import { PICTURE_CARDS } from '../data/pictures';
 import { generateSpymasterHint } from '../utils/spymasterAi';
 import { sound } from '../utils/audio';
 import { speech } from '../utils/speech';
@@ -10,6 +11,7 @@ const RECENT_WORDS_KEY = 'codenames_recent_words';
 
 export function useCodenames() {
   const [phase, setPhase] = useState<GamePhase>('setup');
+  const [gameMode, setGameMode] = useState<GameMode>('word');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
   const [playerTeam, setPlayerTeam] = useState<TeamColor>('red');
   const [cards, setCards] = useState<CardItem[]>([]);
@@ -85,15 +87,13 @@ export function useCodenames() {
     return selected;
   }, []);
 
-  // 카드 섞고 게임 시작
-  const startGame = useCallback((selectedDiff: Difficulty, selectedTeam: TeamColor) => {
+  // 카드 섞고 게임 시작 (모드: 낱말 카드 or 그림 카드)
+  const startGame = useCallback((selectedDiff: Difficulty, selectedTeam: TeamColor, selectedMode: GameMode = 'word') => {
     setIsShuffling(true);
     sound.playCardFlip();
     speech.cancelSpeech();
 
     setTimeout(() => {
-      const words = pick25Words();
-
       // 플레이어 팀이 항상 선공(9장)으로 시작하여 주도적인 플레이 연습을 지원
       const types: CardType[] = [];
       for (let i = 0; i < 9; i++) types.push(selectedTeam);
@@ -108,13 +108,39 @@ export function useCodenames() {
         [types[i], types[j]] = [types[j], types[i]];
       }
 
-      const initialCards: CardItem[] = words.map((word, idx) => ({
-        id: idx,
-        word,
-        type: types[idx],
-        revealed: false,
-      }));
+      let initialCards: CardItem[] = [];
 
+      if (selectedMode === 'picture') {
+        // 그림 카드 25장 셔플 추출
+        const shuffledPics = [...PICTURE_CARDS];
+        for (let i = shuffledPics.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledPics[i], shuffledPics[j]] = [shuffledPics[j], shuffledPics[i]];
+        }
+        const selectedPics = shuffledPics.slice(0, 25);
+
+        initialCards = selectedPics.map((pic, idx) => ({
+          id: idx,
+          word: pic.title,
+          type: types[idx],
+          revealed: false,
+          mode: 'picture',
+          svgIcon: pic.svg,
+          keywords: [...pic.keywords, ...pic.categories, ...pic.hints],
+        }));
+      } else {
+        // 낱말 카드 25장 추출
+        const words = pick25Words();
+        initialCards = words.map((word, idx) => ({
+          id: idx,
+          word,
+          type: types[idx],
+          revealed: false,
+          mode: 'word',
+        }));
+      }
+
+      setGameMode(selectedMode);
       setDifficulty(selectedDiff);
       setPlayerTeam(selectedTeam);
       setCards(initialCards);
@@ -133,7 +159,7 @@ export function useCodenames() {
       setPhase('playing');
       setTurn('spymaster_thinking');
       setStatusMessage('스파이마스터 AI가 전술 키카드를 분석 중입니다...');
-    }, 700);
+    }, 500);
   }, [pick25Words]);
 
   // 스파이마스터 AI 힌트 생성 트리거
@@ -309,18 +335,33 @@ export function useCodenames() {
     }
   }, [phase, turn, guessesLeft, cards, playerTeam, opponentTeam, handleOpponentTurn]);
 
-  // 단어명으로 카드 선택 (텍스트 입력 및 음성 인식용)
+  // 단어명 또는 키워드로 카드 선택 (텍스트 입력 및 음성 인식용)
   const selectCardByWord = useCallback((wordInput: string) => {
     const cleaned = wordInput.trim().replace(/\s+/g, '');
     if (!cleaned) return false;
 
+    // 1. 단어명 직접 일치 검사
     const matched = cards.find(c => !c.revealed && c.word.replace(/\s+/g, '') === cleaned);
     if (matched) {
       selectCard(matched.id);
       return true;
     }
 
-    // 부분 일치 탐색 (예: "사과야" -> "사과")
+    // 2. 그림 카드 키워드 일치 검사 (예: 그림 카드가 "로켓 고래"일 때 "로켓" 또는 "고래"로 지목)
+    const keywordMatched = cards.find(c => {
+      if (c.revealed) return false;
+      if (c.keywords && c.keywords.some(kw => kw.replace(/\s+/g, '') === cleaned || cleaned.includes(kw))) {
+        return true;
+      }
+      return false;
+    });
+
+    if (keywordMatched) {
+      selectCard(keywordMatched.id);
+      return true;
+    }
+
+    // 3. 부분 일치 탐색 (예: "사과야" -> "사과")
     const partialMatch = cards.find(c => !c.revealed && (cleaned.includes(c.word) || c.word.includes(cleaned)));
     if (partialMatch) {
       selectCard(partialMatch.id);
@@ -373,6 +414,7 @@ export function useCodenames() {
 
   return {
     phase,
+    gameMode,
     difficulty,
     playerTeam,
     cards,

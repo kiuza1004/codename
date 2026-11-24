@@ -46,16 +46,19 @@ export function generateSpymasterHint(
     matchedAssassin: Set<string>;
   }>();
 
-  // 특정 단어와 힌트의 연관성 검사 함수
-  const getKeywordsForWord = (word: string): string[] => {
-    const meta = wordMetaMap.get(word);
+  // 특정 카드와 힌트의 연관성 검사 함수 (낱말 카드 및 그림 카드 공통 지원)
+  const getKeywordsForCard = (c: CardItem): string[] => {
+    if (c.keywords && c.keywords.length > 0) {
+      return c.keywords;
+    }
+    const meta = wordMetaMap.get(c.word);
     if (!meta) return [];
     return [...meta.categories, ...meta.hints];
   };
 
   // 모든 보드 위 단어들의 키워드 사전 인덱싱
   unrevealedCards.forEach(c => {
-    const keywords = getKeywordsForWord(c.word);
+    const keywords = getKeywordsForCard(c);
     keywords.forEach(kw => {
       // 힌트 후보가 보드판에 있는 단어와 같거나 포함되면 금지 (코드네임 정식 규칙)
       if (boardWords.has(kw) || kw.length < 2) return;

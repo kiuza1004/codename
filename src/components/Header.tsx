@@ -1,10 +1,11 @@
 import React from 'react';
-import { Difficulty, TeamColor } from '../types/game';
+import { Difficulty, GameMode, TeamColor } from '../types/game';
 import { Shield, Volume2, VolumeX, Mic, HelpCircle, RefreshCw } from 'lucide-react';
 
 interface HeaderProps {
   playerTeam: TeamColor;
   difficulty: Difficulty;
+  gameMode?: GameMode;
   playerRemaining: number;
   opponentRemaining: number;
   soundEnabled: boolean;
@@ -18,6 +19,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   playerTeam,
   difficulty,
+  gameMode = 'word',
   playerRemaining,
   opponentRemaining,
   soundEnabled,
@@ -77,9 +79,14 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-lg font-black font-mono text-blue-400">{blueRemaining}</span>
           </div>
 
-          {/* 난이도 배지 */}
-          <div className="hidden sm:block ml-2 pl-3 border-l border-slate-700/80 text-[11px] font-mono text-slate-400">
-            난이도: <span className="text-amber-400 font-semibold">{diffLabel}</span>
+          {/* 모드 및 난이도 배지 */}
+          <div className="hidden sm:flex items-center gap-2 ml-2 pl-3 border-l border-slate-700/80 text-[11px] font-mono text-slate-400">
+            <span className={`px-2 py-0.5 rounded font-bold ${
+              gameMode === 'picture' ? 'bg-purple-950/60 text-purple-300 border border-purple-500/40' : 'bg-cyan-950/60 text-cyan-300 border border-cyan-500/40'
+            }`}>
+              {gameMode === 'picture' ? '🎨 그림 모드' : '📝 낱말 모드'}
+            </span>
+            <span>난이도: <strong className="text-amber-400">{diffLabel}</strong></span>
           </div>
         </div>
 

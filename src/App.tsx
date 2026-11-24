@@ -11,6 +11,7 @@ import { RuleModal } from './components/RuleModal';
 export const App: React.FC = () => {
   const {
     phase,
+    gameMode,
     difficulty,
     playerTeam,
     cards,
@@ -43,11 +44,12 @@ export const App: React.FC = () => {
   const isPlayerActionAllowed = phase === 'playing' && turn === 'player_turn' && guessesLeft > 0;
 
   return (
-    <div className="min-h-screen bg-[#0b0e14] text-slate-100 flex flex-col justify-between selection:bg-cyan-500 selection:text-white font-spy">
-      {/* 상단 기밀 HUD 헤더 */}
+    <div className="h-[100dvh] max-h-[100dvh] w-full bg-[#0b0e14] text-slate-100 flex flex-col justify-between overflow-hidden selection:bg-cyan-500 selection:text-white font-spy">
+      {/* 상단 기밀 HUD 헤더 (고정 슬림 바) */}
       <Header
         playerTeam={playerTeam}
         difficulty={difficulty}
+        gameMode={gameMode}
         playerRemaining={playerRemaining}
         opponentRemaining={opponentRemaining}
         soundEnabled={soundEnabled}
@@ -58,19 +60,21 @@ export const App: React.FC = () => {
         onReset={resetToSetup}
       />
 
-      {/* 메인 컨테이너 */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-2 sm:px-4 py-2 sm:py-6 flex flex-col justify-between gap-2 sm:gap-4">
-        {/* 스파이마스터 팀장 브리핑 패널 */}
-        <SpymasterPanel
-          currentHint={currentHint}
-          hintHistory={hintHistory}
-          turn={turn}
-          playerTeam={playerTeam}
-          guessesLeft={guessesLeft}
-          statusMessage={statusMessage}
-        />
+      {/* 메인 작전 구역 (화면 높이에 맞춰 세로 스크롤 없이 100% 핏) */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-1.5 sm:px-3 py-1 sm:py-2 flex flex-col justify-between gap-1 sm:gap-2 min-h-0 overflow-hidden">
+        {/* 스파이마스터 팀장 브리핑 전광판 */}
+        <div className="flex-shrink-0">
+          <SpymasterPanel
+            currentHint={currentHint}
+            hintHistory={hintHistory}
+            turn={turn}
+            playerTeam={playerTeam}
+            guessesLeft={guessesLeft}
+            statusMessage={statusMessage}
+          />
+        </div>
 
-        {/* 5x5 실제 코드네임 카드 그리드 (25장) */}
+        {/* 5x5 실제 코드네임 카드 그리드 (25장 전체 기기 맞춤 뷰) */}
         <CardGrid
           cards={cards}
           onSelectCard={selectCard}
@@ -78,21 +82,23 @@ export const App: React.FC = () => {
         />
 
         {/* 하단 입력 컨트롤 (음성 인식 + 텍스트 타이핑 + 턴 패스) */}
-        <ActionControls
-          onSelectByWord={selectCardByWord}
-          onPassTurn={passTurn}
-          onToggleVoice={toggleVoiceInput}
-          isListening={isListening}
-          voiceError={voiceError}
-          disabled={!isPlayerActionAllowed}
-        />
+        <div className="flex-shrink-0">
+          <ActionControls
+            onSelectByWord={selectCardByWord}
+            onPassTurn={passTurn}
+            onToggleVoice={toggleVoiceInput}
+            isListening={isListening}
+            voiceError={voiceError}
+            disabled={!isPlayerActionAllowed}
+          />
+        </div>
       </main>
 
-      {/* 푸터: 크레딧 및 PWA 안내 가이드라인 */}
-      <footer className="w-full bg-[#080a0f] border-t border-slate-900 py-3 px-4 text-center text-xs text-slate-500 font-mono">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>CODENAMES : SPYMASTER AI TRAINING WEBAPP © 2026</span>
-          <span className="text-amber-500/80">
+      {/* 푸터: 슬림 한 줄 바 */}
+      <footer className="w-full bg-[#080a0f] border-t border-slate-900/80 py-1 px-2 text-center text-[10px] text-slate-500 font-mono flex-shrink-0">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
+          <span className="hidden sm:inline">CODENAMES AI TRAINING</span>
+          <span className="text-amber-500/80 text-[10px]">
             ※ PWA 안내: 캐시가 꼬일 수 있으니 꼭 기존 앱을 완전히 삭제하고 설치하셔야 합니다.
           </span>
           <a
@@ -101,12 +107,12 @@ export const App: React.FC = () => {
             rel="noreferrer"
             className="text-cyan-400 hover:underline"
           >
-            GitHub Repository
+            GitHub
           </a>
         </div>
       </footer>
 
-      {/* 설정 모달 (게임 난이도 선택 + 팀 색상 선택 + 카드 셔플 시작) */}
+      {/* 설정 모달 (1단계: 낱말 카드 vs 그림 카드 선택 ➔ 2단계: 난이도 ➔ 3단계: 팀 색상 ➔ 카드 셔플) */}
       {phase === 'setup' && (
         <SetupModal
           onStart={startGame}

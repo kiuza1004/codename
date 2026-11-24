@@ -1,13 +1,18 @@
 export type TeamColor = 'red' | 'blue';
 export type CardType = 'red' | 'blue' | 'neutral' | 'assassin';
 export type Difficulty = 'easy' | 'normal' | 'hard';
+export type GameMode = 'word' | 'picture';
 
 export interface CardItem {
   id: number;
   word: string;
   type: CardType;
   revealed: boolean;
-  marked?: boolean; // 플레이어가 마크한 상태
+  marked?: boolean;
+  mode?: GameMode;
+  imageUrl?: string;
+  svgIcon?: string;
+  keywords?: string[];
 }
 
 export interface Hint {
