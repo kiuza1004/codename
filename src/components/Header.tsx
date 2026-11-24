@@ -37,25 +37,26 @@ export const Header: React.FC<HeaderProps> = ({
   }[difficulty];
 
   return (
-    <header className="w-full bg-[#111726]/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 sticky top-0 z-30 shadow-lg">
-      <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
+    <header className="w-full bg-[#111726]/90 backdrop-blur-md border-b border-slate-800/80 px-2 sm:px-4 py-1.5 sm:py-3 sticky top-0 z-30 shadow-lg">
+      <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
         {/* 타이틀 및 엠블럼 */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 ring-1 ring-white/20">
-            <Shield className="w-5 h-5 text-white" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 ring-1 ring-white/20">
+            <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black tracking-wider text-white font-mono">
-                CODENAMES <span className="text-cyan-400 font-sans text-xs px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/30">AI 팀장 모드</span>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-base sm:text-xl font-black tracking-wider text-white font-mono">
+                CODENAMES
               </h1>
+              <span className="text-cyan-400 font-sans text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-950/80 border border-cyan-500/30">AI 팀장</span>
             </div>
-            <p className="text-xs text-slate-400 font-medium">스마트 스파이마스터 연습 웹앱</p>
+            <p className="text-[10px] text-slate-400 font-medium hidden sm:block">스마트 스파이마스터 연습 웹앱</p>
           </div>
         </div>
 
         {/* 전광판: 레드팀 vs 블루팀 스코어 */}
-        <div className="flex items-center gap-3 bg-slate-900/90 px-4 py-1.5 rounded-2xl border border-slate-700/60 shadow-inner">
+        <div className="flex items-center gap-1.5 sm:gap-3 bg-slate-900/90 px-2 sm:px-4 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl border border-slate-700/60 shadow-inner">
           {/* 레드팀 */}
           <div className={`flex items-center gap-2 px-3 py-1 rounded-xl transition-all ${
             playerTeam === 'red' ? 'bg-red-500/20 border border-red-500/40 text-red-400 font-bold' : 'text-slate-400'

@@ -38,11 +38,11 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
   };
 
   return (
-    <div className={`w-full rounded-3xl border-2 transition-all duration-300 backdrop-blur-xl p-4 sm:p-6 shadow-2xl ${
+    <div className={`w-full rounded-2xl sm:rounded-3xl border-2 transition-all duration-300 backdrop-blur-xl p-2.5 sm:p-5 shadow-xl ${
       isPlayerTurn ? teamColorClass : 'border-slate-800 bg-[#121724]'
     }`}>
       {/* 1. 상단 바: 팀장 상태 및 모드 안내 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border ${
@@ -96,7 +96,7 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
       </div>
 
       {/* 2. 메인 초대형 글자 힌트 전광판 (MEGA HINT BILLBOARD) */}
-      <div className="my-4 p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-slate-700/80 shadow-inner flex flex-col items-center justify-center text-center relative overflow-hidden">
+      <div className="my-2 p-2.5 sm:p-5 rounded-xl sm:rounded-2xl bg-slate-950/90 border border-slate-700/80 shadow-inner flex flex-col items-center justify-center text-center relative overflow-hidden">
         {/* 장식용 사이버 라인 */}
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
 

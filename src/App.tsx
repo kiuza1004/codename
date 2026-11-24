@@ -59,7 +59,7 @@ export const App: React.FC = () => {
       />
 
       {/* 메인 컨테이너 */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-4 sm:py-6 flex flex-col justify-between gap-4">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-2 sm:px-4 py-2 sm:py-6 flex flex-col justify-between gap-2 sm:gap-4">
         {/* 스파이마스터 팀장 브리핑 패널 */}
         <SpymasterPanel
           currentHint={currentHint}

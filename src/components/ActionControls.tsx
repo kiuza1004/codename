@@ -38,15 +38,15 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#111726]/95 backdrop-blur-md border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+    <div className="w-full bg-[#111726]/95 backdrop-blur-md border border-slate-800 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-xl">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4">
         {/* 음성 인식 버튼 (STT) */}
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onToggleVoice}
             disabled={disabled}
-            className={`relative flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all border shadow-lg ${
+            className={`w-full sm:w-auto relative flex items-center justify-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all border shadow-md ${
               isListening
                 ? 'bg-red-500/20 border-red-500 text-red-400 animate-pulse shadow-red-500/30'
                 : 'bg-gradient-to-r from-cyan-600 to-blue-600 border-cyan-400/40 text-white hover:brightness-110 shadow-cyan-600/20'
@@ -76,7 +76,7 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
               onChange={(e) => setInputText(e.target.value)}
               disabled={disabled}
               placeholder={disabled ? "상대방 턴 또는 팀장 분석 중..." : "단어 직접 입력 (예: 사과, 비행기)"}
-              className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl px-4 py-3 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium"
+              className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-base text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium"
             />
             {inputText && (
               <button
@@ -92,10 +92,10 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
           <button
             type="submit"
             disabled={disabled || !inputText.trim()}
-            className="flex items-center gap-1.5 px-4 py-3 rounded-xl bg-slate-800 hover:bg-cyan-600 text-slate-200 hover:text-white font-bold text-sm border border-slate-700 hover:border-cyan-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-3 rounded-xl bg-slate-800 hover:bg-cyan-600 text-slate-200 hover:text-white font-bold text-xs sm:text-sm border border-slate-700 hover:border-cyan-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
           >
-            <Send className="w-4 h-4" />
-            <span className="hidden sm:inline">지목</span>
+            <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>지목</span>
           </button>
         </form>
 
@@ -105,10 +105,10 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
           onClick={onPassTurn}
           disabled={disabled}
           title="남은 지목 기회를 종료하고 상대방 턴으로 넘깁니다"
-          className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-300 font-semibold text-sm border border-slate-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 sm:py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-300 font-semibold text-xs sm:text-sm border border-slate-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <SkipForward className="w-4 h-4 text-amber-400" />
-          <span>턴 종료 (Pass)</span>
+          <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+          <span>턴 종료</span>
         </button>
       </div>
 
