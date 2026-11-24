@@ -12,6 +12,7 @@ interface SpymasterPanelProps {
 }
 
 export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
+  currentHint,
   hintHistory,
   turn,
   playerTeam,
@@ -85,9 +86,9 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
       {/* 2번 화면 - ② [바로 아래] 팀장 힌트 패널 (카드 바로 위에 위치) */}
       <div className="w-full rounded-2xl border border-slate-700/70 bg-[#121725]/95 backdrop-blur-md p-2.5 sm:p-3.5 shadow-md">
         <div className="flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap flex-1">
             <div className="relative shrink-0">
-              <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center border ${
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border shadow-inner ${
                 playerTeam === 'red' ? 'bg-red-950/70 border-red-500/60 text-red-400' : 'bg-blue-950/70 border-blue-500/60 text-blue-400'
               }`}>
                 <Bot className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
@@ -97,7 +98,8 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
               }`}></span>
             </div>
 
-            <div>
+            <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
+              {/* 상단: 팀장 라벨 및 팀 정보 */}
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-mono font-bold tracking-wider text-slate-200">팀장 힌트</span>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-bold border ${
@@ -110,17 +112,38 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
                   ARGON AI ENGINE
                 </span>
               </div>
-              <div className="text-xs text-slate-300 font-medium flex items-center gap-1.5 mt-0.5">
-                {isThinking && <span className="text-cyan-400 flex items-center gap-1"><Radio className="w-3.5 h-3.5 animate-spin" /> 팀장 AI가 새 암호단어를 연산 중...</span>}
-                {isOpponentTurn && <span className="text-amber-400 flex items-center gap-1"><Radio className="w-3.5 h-3.5 animate-pulse" /> 상대 팀 요원 행동 중...</span>}
-                {isPlayerTurn && <span className="text-emerald-400 flex items-center gap-1"><Target className="w-3.5 h-3.5 shrink-0" /> <span>{statusMessage}</span></span>}
-              </div>
+
+              {/* 하단: 핵심 팀장 힌트 내용 (단어 + 수량) 바로 노출 */}
+              {currentHint ? (
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap mt-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base sm:text-2xl font-black font-spy tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-white px-2.5 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-400/50 shadow-sm">
+                      "{currentHint.word}"
+                    </span>
+                    <span className="text-sm sm:text-lg font-black font-mono text-amber-300 px-2 py-0.5 rounded-lg bg-amber-950/80 border border-amber-500/50 shadow-sm">
+                      {currentHint.count}장
+                    </span>
+                  </div>
+
+                  {/* 상태 메시지 */}
+                  <div className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
+                    {isThinking && <span className="text-cyan-400 flex items-center gap-1"><Radio className="w-3.5 h-3.5 animate-spin" /> 팀장 AI가 새 암호단어를 연산 중...</span>}
+                    {isOpponentTurn && <span className="text-amber-400 flex items-center gap-1"><Radio className="w-3.5 h-3.5 animate-pulse" /> 상대 팀 요원 행동 중...</span>}
+                    {isPlayerTurn && <span className="text-emerald-400 flex items-center gap-1"><Target className="w-3.5 h-3.5 shrink-0" /> <span>{statusMessage}</span></span>}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
+                  <Radio className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
+                  <span>팀장 힌트를 생성 중입니다...</span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* 연속 정답 콤보 배지 (2콤보 이상 시 활성화) */}
           {combo >= 2 && (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 to-red-500/20 border border-amber-500/50 text-amber-300 text-xs font-mono font-black animate-bounce">
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 to-red-500/20 border border-amber-500/50 text-amber-300 text-xs font-mono font-black animate-bounce shrink-0">
               <Flame className="w-3.5 h-3.5 text-amber-400" />
               <span>{combo} COMBO!</span>
             </div>
