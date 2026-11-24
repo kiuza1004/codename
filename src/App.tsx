@@ -16,6 +16,7 @@ export const App: React.FC = () => {
     cards,
     turn,
     currentHint,
+    hintHistory,
     guessesLeft,
     statusMessage,
     winner,
@@ -62,6 +63,7 @@ export const App: React.FC = () => {
         {/* 스파이마스터 팀장 브리핑 패널 */}
         <SpymasterPanel
           currentHint={currentHint}
+          hintHistory={hintHistory}
           turn={turn}
           playerTeam={playerTeam}
           guessesLeft={guessesLeft}

@@ -15,6 +15,7 @@ export interface Hint {
   count: number;
   targetWords?: string[];
   explanation?: string;
+  turnNumber?: number;
 }
 
 export type GamePhase = 'setup' | 'playing' | 'gameover';

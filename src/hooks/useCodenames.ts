@@ -15,6 +15,7 @@ export function useCodenames() {
   const [cards, setCards] = useState<CardItem[]>([]);
   const [turn, setTurn] = useState<TurnPhase>('spymaster_thinking');
   const [currentHint, setCurrentHint] = useState<Hint | null>(null);
+  const [hintHistory, setHintHistory] = useState<Hint[]>([]);
   const [guessesLeft, setGuessesLeft] = useState<number>(0);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [winner, setWinner] = useState<TeamColor | 'assassin_loss' | null>(null);
@@ -119,6 +120,7 @@ export function useCodenames() {
       setCards(initialCards);
       setWinner(null);
       setCurrentHint(null);
+      setHintHistory([]);
       setGuessesLeft(0);
       setStats({
         turnsTaken: 1,
@@ -141,7 +143,9 @@ export function useCodenames() {
 
     setTimeout(() => {
       const hint = generateSpymasterHint(currentCards, playerTeam, difficulty);
-      setCurrentHint(hint);
+      const hintWithTurn = { ...hint, turnNumber: stats.turnsTaken };
+      setCurrentHint(hintWithTurn);
+      setHintHistory(prev => [...prev, hintWithTurn]);
       const availableGuesses = hint.count + 1; // 코드네임 공식 규칙: 힌트 개수 + 1회까지 추측 가능
       setGuessesLeft(availableGuesses);
       setTurn('player_turn');
@@ -150,8 +154,8 @@ export function useCodenames() {
       sound.playHintBeep();
       const teamLabel = playerTeam === 'red' ? '레드' : '블루';
       speech.speakHint(teamLabel, hint.word, hint.count);
-    }, 900);
-  }, [playerTeam, difficulty]);
+    }, 300);
+  }, [playerTeam, difficulty, stats.turnsTaken]);
 
   // 게임 시작 시 첫 번째 힌트 자동 생성
   const hasTriggeredFirstHint = useRef(false);
@@ -374,6 +378,7 @@ export function useCodenames() {
     cards,
     turn,
     currentHint,
+    hintHistory,
     guessesLeft,
     statusMessage,
     winner,
