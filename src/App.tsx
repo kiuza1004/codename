@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCodenames } from './hooks/useCodenames';
 import { Header } from './components/Header';
+import { SecretHintBanner } from './components/SecretHintBanner';
 import { SpymasterPanel } from './components/SpymasterPanel';
 import { CardGrid } from './components/CardGrid';
 import { ActionControls } from './components/ActionControls';
@@ -60,9 +61,18 @@ export const App: React.FC = () => {
         onReset={resetToSetup}
       />
 
-      {/* 메인 작전 구역 (시원하고 자연스러운 스크롤 레이아웃) */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-3 sm:py-5 flex flex-col justify-between gap-3 sm:gap-4">
-        {/* 스파이마스터 팀장 상태 패널 */}
+      {/* 메인 작전 구역 */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-2 sm:py-4 flex flex-col justify-between gap-2.5 sm:gap-3.5">
+        {/* 🎯 1. [암호힌트] 팀장힌트 위로 배치 */}
+        <SecretHintBanner
+          currentHint={currentHint}
+          guessesLeft={guessesLeft}
+          playerTeam={playerTeam}
+          isPictureMode={cards.length > 0 && cards[0].mode === 'picture'}
+          disabled={!isPlayerActionAllowed}
+        />
+
+        {/* 🤖 2. [팀장힌트] 카드 바로 위에 위치 */}
         <SpymasterPanel
           currentHint={currentHint}
           hintHistory={hintHistory}
@@ -71,17 +81,14 @@ export const App: React.FC = () => {
           statusMessage={statusMessage}
         />
 
-        {/* 🎯 낱말카드 바로 위에서 보이는 직속 암호단어 바 + 실제 카드 그리드 (낱말 5x5 / 그림 5x4) */}
+        {/* 🃏 3. [카드판] 팀장힌트 바로 아래 위치 (낱말 5x5 / 그림 5x4) */}
         <CardGrid
           cards={cards}
-          currentHint={currentHint}
-          guessesLeft={guessesLeft}
-          playerTeam={playerTeam}
           onSelectCard={selectCard}
           disabled={!isPlayerActionAllowed}
         />
 
-        {/* 하단 입력 컨트롤 (음성 인식 + 텍스트 타이핑 + 턴 패스) */}
+        {/* 4. 하단 입력 컨트롤 (음성 인식 + 텍스트 타이핑 + 턴 패스) */}
         <ActionControls
           onSelectByWord={selectCardByWord}
           onPassTurn={passTurn}
