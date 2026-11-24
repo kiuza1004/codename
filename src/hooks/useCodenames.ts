@@ -14,7 +14,16 @@ export function useCodenames() {
   const [gameMode, setGameMode] = useState<GameMode>('word');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
   const [playerTeam, setPlayerTeam] = useState<TeamColor>('red');
-  const [cards, setCards] = useState<CardItem[]>([]);
+  const [cards, setCards] = useState<CardItem[]>(() => {
+    // 최초 접속 시에도 빈 화면이 나오지 않도록 기본 25장 낱말 카드 사전 배치
+    return ALL_CODENAME_WORDS.slice(0, 25).map((word, idx) => ({
+      id: idx,
+      word,
+      type: idx < 9 ? 'red' : idx < 17 ? 'blue' : idx < 24 ? 'neutral' : 'assassin',
+      revealed: false,
+      mode: 'word',
+    }));
+  });
   const [turn, setTurn] = useState<TurnPhase>('spymaster_thinking');
   const [currentHint, setCurrentHint] = useState<Hint | null>(null);
   const [hintHistory, setHintHistory] = useState<Hint[]>([]);

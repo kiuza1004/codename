@@ -44,7 +44,7 @@ export const App: React.FC = () => {
   const isPlayerActionAllowed = phase === 'playing' && turn === 'player_turn' && guessesLeft > 0;
 
   return (
-    <div className="min-h-screen w-full bg-[#0b0e14] text-slate-100 flex flex-col justify-between selection:bg-cyan-500 selection:text-white font-spy">
+    <div className="min-h-screen bg-[#0b0e14] text-slate-100 flex flex-col justify-between selection:bg-cyan-500 selection:text-white font-spy">
       {/* 상단 기밀 HUD 헤더 */}
       <Header
         playerTeam={playerTeam}
@@ -60,8 +60,8 @@ export const App: React.FC = () => {
         onReset={resetToSetup}
       />
 
-      {/* 메인 작전 구역 */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-2 sm:px-4 py-2 sm:py-4 flex flex-col justify-between gap-3">
+      {/* 메인 작전 구역 (시원하고 자연스러운 스크롤 레이아웃) */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6 flex flex-col justify-between gap-4">
         {/* 스파이마스터 팀장 브리핑 전광판 */}
         <SpymasterPanel
           currentHint={currentHint}
@@ -90,11 +90,11 @@ export const App: React.FC = () => {
         />
       </main>
 
-      {/* 푸터: 슬림 한 줄 바 */}
-      <footer className="w-full bg-[#080a0f] border-t border-slate-900/80 py-1 px-2 text-center text-[10px] text-slate-500 font-mono flex-shrink-0">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
-          <span className="hidden sm:inline">CODENAMES AI TRAINING</span>
-          <span className="text-amber-500/80 text-[10px]">
+      {/* 푸터: 크레딧 및 PWA 안내 가이드라인 */}
+      <footer className="w-full bg-[#080a0f] border-t border-slate-900 py-3 px-4 text-center text-xs text-slate-500 font-mono">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+          <span>CODENAMES : SPYMASTER AI TRAINING WEBAPP © 2026</span>
+          <span className="text-amber-500/80">
             ※ PWA 안내: 캐시가 꼬일 수 있으니 꼭 기존 앱을 완전히 삭제하고 설치하셔야 합니다.
           </span>
           <a
@@ -103,7 +103,7 @@ export const App: React.FC = () => {
             rel="noreferrer"
             className="text-cyan-400 hover:underline"
           >
-            GitHub
+            GitHub Repository
           </a>
         </div>
       </footer>
