@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Difficulty, GameMode, TeamColor } from '../types/game';
-import { Shield, Sparkles, Shuffle, Flame, Zap, Award, Type, Image as ImageIcon } from 'lucide-react';
+import { APP_VERSION, APP_BUILD_DATE, forceCacheReload } from '../constants/version';
+import { Shield, Sparkles, Shuffle, Flame, Zap, Award, Type, Image as ImageIcon, RotateCcw } from 'lucide-react';
 
 interface SetupModalProps {
   onStart: (difficulty: Difficulty, team: TeamColor, mode: GameMode) => void;
@@ -18,27 +19,32 @@ export const SetupModal: React.FC<SetupModalProps> = ({ onStart, isShuffling }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4 overflow-y-auto animate-fadeIn">
-      {/* 📱 모바일/PC 화면 최적화 피팅: 스크롤 없이 한 화면에 딱 컴팩트하게 들어오는 모달 창 */}
+      {/* 📱 모바일/PC 화면 최적화 피팅 */}
       <div className="w-full max-w-md bg-[#131927] border border-slate-700/80 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-2xl relative overflow-hidden my-auto max-h-[96dvh] flex flex-col justify-between">
         {/* 장식용 배경 글로우 */}
         <div className="absolute -top-20 -left-20 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        {/* 상단 엠블럼 (컴팩트 최적화) */}
-        <div className="flex flex-col items-center text-center mb-2.5 sm:mb-4">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 ring-1 ring-white/20 mb-1">
-            <Shield className="w-5 h-5 text-white" />
+        {/* 상단 엠블럼 및 버전 뱃지 (최신 버전 명시) */}
+        <div className="flex flex-col items-center text-center mb-2 sm:mb-3">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 ring-1 ring-white/20">
+              <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            <h2 className="text-lg sm:text-xl font-black text-white tracking-wide font-mono">
+              CODENAMES
+            </h2>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/50 text-emerald-300">
+              {APP_VERSION}
+            </span>
           </div>
-          <h2 className="text-lg sm:text-xl font-black text-white tracking-wide font-mono">
-            CODENAMES
-          </h2>
           <p className="text-[10px] text-cyan-400 font-mono tracking-widest">
             SPYMASTER AI TACTICAL TRAINING
           </p>
         </div>
 
-        {/* STEP 1: 카드 종류 선택 (가장 먼저 선택) */}
-        <div className="mb-2.5 sm:mb-3.5">
+        {/* STEP 1: 카드 종류 선택 */}
+        <div className="mb-2 sm:mb-3">
           <label className="block text-[11px] font-mono uppercase tracking-wider text-cyan-300 font-bold mb-1 sm:mb-1.5">
             STEP 1. 카드 종류 선택 (선택 필수)
           </label>
@@ -76,7 +82,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({ onStart, isShuffling }) 
         </div>
 
         {/* STEP 2: 난이도 설정 */}
-        <div className="mb-2.5 sm:mb-3.5">
+        <div className="mb-2 sm:mb-3">
           <label className="block text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-1 sm:mb-1.5">
             STEP 2. 작전 난이도 선택
           </label>
@@ -129,7 +135,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({ onStart, isShuffling }) 
         </div>
 
         {/* STEP 3: 팀 색상 선택 */}
-        <div className="mb-3 sm:mb-4">
+        <div className="mb-2.5 sm:mb-3.5">
           <label className="block text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-1 sm:mb-1.5">
             STEP 3. 소속 팀 색상 선택
           </label>
@@ -184,10 +190,19 @@ export const SetupModal: React.FC<SetupModalProps> = ({ onStart, isShuffling }) 
           )}
         </button>
 
-        {/* 안내문 */}
-        <p className="text-[9px] sm:text-[10px] text-center text-slate-500 font-mono mt-1.5 sm:mt-2">
-          ※ {selectedMode === 'picture' ? '독창적 일러스트 픽처스 5×4 모드' : '공식 한국어 단어 200+ 5×5 모드'} | 모바일 화면 자동 피팅
-        </p>
+        {/* 하단 버전 정보 및 캐시 클리어 버튼 */}
+        <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[9px] sm:text-[10px] text-slate-400 font-mono">
+          <span>버전: <strong className="text-emerald-400">{APP_VERSION}</strong> ({APP_BUILD_DATE})</span>
+          <button
+            type="button"
+            onClick={forceCacheReload}
+            title="브라우저 캐시를 지우고 최신 버전을 다시 불러옵니다"
+            className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 underline font-bold"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>캐시 강제 새로고침</span>
+          </button>
+        </div>
       </div>
     </div>
   );

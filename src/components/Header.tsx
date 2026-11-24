@@ -1,6 +1,7 @@
 import React from 'react';
 import { Difficulty, GameMode, TeamColor } from '../types/game';
-import { Shield, Volume2, VolumeX, Mic, HelpCircle, RefreshCw } from 'lucide-react';
+import { APP_VERSION, forceCacheReload } from '../constants/version';
+import { Shield, Volume2, VolumeX, Mic, HelpCircle, RefreshCw, RotateCcw } from 'lucide-react';
 
 interface HeaderProps {
   playerTeam: TeamColor;
@@ -43,23 +44,37 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2">
         {/* 1행 (모바일) / 좌측 (PC): 로고 & 엠블럼 + 신속 제어 버튼 그룹 */}
         <div className="flex items-center justify-between gap-2 w-full md:w-auto">
-          {/* 타이틀 및 엠블럼 */}
+          {/* 타이틀 및 엠블럼 + 버전 배지 */}
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 ring-1 ring-white/20 shrink-0">
               <Shield className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-white" />
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <h1 className="text-sm sm:text-lg font-black tracking-wider text-white font-mono whitespace-nowrap">
                 CODENAMES
               </h1>
-              <span className="text-cyan-400 font-sans text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-950/80 border border-cyan-500/30 whitespace-nowrap">
+              {/* 🎯 [사용자 요청] 메인화면 버전정보 명확히 등록 */}
+              <span className="text-emerald-300 font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-950 border border-emerald-500/50 whitespace-nowrap">
+                {APP_VERSION}
+              </span>
+              <span className="text-cyan-400 font-sans text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-950/80 border border-cyan-500/30 whitespace-nowrap hidden sm:inline">
                 AI 팀장
               </span>
             </div>
           </div>
 
-          {/* 컨트롤 버튼 그룹 (글자 잘림 없이 컴팩트 패딩 적용) */}
+          {/* 컨트롤 버튼 그룹 */}
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* 캐시 강제 새로고침 버튼 */}
+            <button
+              onClick={forceCacheReload}
+              title="브라우저 캐시 초기화 및 최신 버전 새로고침"
+              className="p-1.5 sm:p-2 rounded-xl border border-emerald-700/60 bg-emerald-950/60 text-emerald-300 hover:bg-emerald-900/60 transition-all flex items-center gap-1 text-[11px] font-mono"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">캐시갱신</span>
+            </button>
+
             {/* 효과음 토글 */}
             <button
               onClick={onToggleSound}

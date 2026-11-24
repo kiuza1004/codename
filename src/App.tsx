@@ -102,7 +102,7 @@ export const App: React.FC = () => {
       {/* 푸터: 크레딧 및 PWA 안내 가이드라인 */}
       <footer className="w-full bg-[#080a0f] border-t border-slate-900 py-3 px-4 text-center text-xs text-slate-500 font-mono">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>CODENAMES : SPYMASTER AI TRAINING WEBAPP © 2026</span>
+          <span>CODENAMES : SPYMASTER AI TRAINING WEBAPP <strong className="text-emerald-400">v1.4.0</strong> (2026.11.25)</span>
           <span className="text-amber-500/80">
             ※ PWA 안내: 캐시가 꼬일 수 있으니 꼭 기존 앱을 완전히 삭제하고 설치하셔야 합니다.
           </span>
