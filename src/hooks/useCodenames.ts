@@ -256,7 +256,7 @@ export function useCodenames() {
       const availableGuesses = hint.count + 1;
       setGuessesLeft(availableGuesses);
       setTurn('player_turn');
-      setStatusMessage(`암호 힌트가 도착했습니다. 목표 카드(${hint.count}장)를 추리하여 지목하십시오.`);
+      setStatusMessage(`목표 카드(${hint.count}장)를 지목하십시오.`);
 
       sound.playHintBeep();
       const teamLabel = playerTeam === 'red' ? '레드' : '블루';
