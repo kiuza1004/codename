@@ -1,6 +1,6 @@
-export const APP_VERSION = 'v2.0.0 ARGON';
-export const APP_BUILD_DATE = '2026-11-25 01:45 KST';
-export const APP_CHANGELOG = 'Argon Tactical AI Engine, 후보 카드 핀 마킹, 카드 확대 줌, 추리 코칭 팁, 자동완성 지목';
+export const APP_VERSION = 'v2.1.0 ARGON';
+export const APP_BUILD_DATE = '2026-11-25 01:58 KST';
+export const APP_CHANGELOG = '그림 카드 100종 확장 및 중복 방지 20장 순환 출제 시스템';
 
 const CAREER_STORAGE_KEY = 'codenames_argon_career_v2';
 

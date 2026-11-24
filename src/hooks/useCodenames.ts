@@ -9,6 +9,7 @@ import { speech } from '../utils/speech';
 import confetti from 'canvas-confetti';
 
 const RECENT_WORDS_KEY = 'codenames_recent_words';
+const RECENT_PICS_KEY = 'codenames_recent_pictures';
 
 export function useCodenames() {
   const [phase, setPhase] = useState<GamePhase>('setup');
@@ -125,6 +126,41 @@ export function useCodenames() {
     return selected;
   }, []);
 
+  // 최근 사용된 그림 카드를 피해서 100장 중 20장 무작위 추출
+  const pick20Pictures = useCallback(() => {
+    let recentPicIds: string[] = [];
+    try {
+      const stored = sessionStorage.getItem(RECENT_PICS_KEY);
+      if (stored) recentPicIds = JSON.parse(stored);
+    } catch {
+      recentPicIds = [];
+    }
+
+    const freshPics = PICTURE_CARDS.filter(p => !recentPicIds.includes(p.id));
+    let pool = [...freshPics];
+
+    if (pool.length < 20) {
+      pool = [...PICTURE_CARDS];
+      recentPicIds = [];
+    }
+
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+
+    const selected = pool.slice(0, 20);
+
+    try {
+      const updated = Array.from(new Set([...selected.map(p => p.id), ...recentPicIds])).slice(0, 60);
+      sessionStorage.setItem(RECENT_PICS_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+
+    return selected;
+  }, []);
+
   // 카드 섞고 게임 시작
   const startGame = useCallback((selectedDiff: Difficulty, selectedTeam: TeamColor, selectedMode: GameMode = 'word') => {
     setIsShuffling(true);
@@ -158,12 +194,7 @@ export function useCodenames() {
       let initialCards: CardItem[] = [];
 
       if (selectedMode === 'picture') {
-        const shuffledPics = [...PICTURE_CARDS];
-        for (let i = shuffledPics.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffledPics[i], shuffledPics[j]] = [shuffledPics[j], shuffledPics[i]];
-        }
-        const selectedPics = shuffledPics.slice(0, 20);
+        const selectedPics = pick20Pictures();
 
         initialCards = selectedPics.map((pic, idx) => ({
           id: idx,
@@ -209,7 +240,7 @@ export function useCodenames() {
       setTurn('spymaster_thinking');
       setStatusMessage('Argon 스파이마스터 AI가 전술 키카드를 분석 중입니다...');
     }, 500);
-  }, [pick25Words]);
+  }, [pick25Words, pick20Pictures]);
 
   // 스파이마스터 AI 힌트 생성 트리거 (이미 사용된 힌트 제외)
   const triggerSpymasterHint = useCallback((currentCards: CardItem[], existingHistory: Hint[]) => {

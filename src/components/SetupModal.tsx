@@ -94,7 +94,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({ onStart, isShuffling, ca
             >
               <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
               <span className="font-bold text-xs sm:text-sm whitespace-nowrap">🎨 그림(픽처스) 5×4</span>
-              <span className="text-[9px] text-slate-400 leading-none">초현실 일러스트 20장</span>
+              <span className="text-[9px] text-slate-400 leading-none">초현실 그림 100종 (20장)</span>
             </button>
           </div>
         </div>
