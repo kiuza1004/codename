@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Hint, TeamColor, TurnPhase } from '../types/game';
-import { Bot, Radio, Target, History, ChevronDown, ChevronUp, Flame, ShieldCheck } from 'lucide-react';
+import { Bot, Radio, Target, History, ChevronDown, ChevronUp, Flame, ShieldCheck, SkipForward } from 'lucide-react';
 
 interface SpymasterPanelProps {
   currentHint: Hint | null;
@@ -9,6 +9,8 @@ interface SpymasterPanelProps {
   playerTeam: TeamColor;
   statusMessage: string;
   combo?: number;
+  onPassTurn?: () => void;
+  canPassTurn?: boolean;
 }
 
 export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
@@ -18,6 +20,8 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
   playerTeam,
   statusMessage,
   combo = 0,
+  onPassTurn,
+  canPassTurn = false,
 }) => {
   const [showHistory, setShowHistory] = useState(false);
 
@@ -150,13 +154,33 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
             </div>
           </div>
 
-          {/* 연속 정답 콤보 배지 (2콤보 이상 시 활성화) */}
-          {combo >= 2 && (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 to-red-500/20 border border-amber-500/50 text-amber-300 text-xs font-mono font-black animate-bounce shrink-0">
-              <Flame className="w-3.5 h-3.5 text-amber-400" />
-              <span>{combo} COMBO!</span>
-            </div>
-          )}
+          {/* 우측 상단: [턴 종료] 직관 버튼 & 연속 정답 콤보 배지 */}
+          <div className="flex items-center gap-2 shrink-0">
+            {onPassTurn && (
+              <button
+                type="button"
+                onClick={onPassTurn}
+                disabled={!canPassTurn}
+                title={canPassTurn ? '남은 지목 기회를 마치고 상대 턴으로 넘깁니다' : '현재는 턴을 넘길 수 없습니다'}
+                className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-bold font-mono text-xs sm:text-sm border transition-all shadow-md ${
+                  canPassTurn
+                    ? 'bg-gradient-to-r from-amber-600/90 to-amber-700/90 hover:from-amber-500 hover:to-amber-600 border-amber-400 text-white shadow-amber-900/50 cursor-pointer active:scale-95 animate-pulse'
+                    : 'bg-slate-900/60 text-slate-500 border-slate-800 cursor-not-allowed opacity-45'
+                }`}
+              >
+                <SkipForward className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${canPassTurn ? 'text-amber-200' : 'text-slate-500'}`} />
+                <span>턴 종료</span>
+              </button>
+            )}
+
+            {/* 연속 정답 콤보 배지 (2콤보 이상 시 활성화) */}
+            {combo >= 2 && (
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 to-red-500/20 border border-amber-500/50 text-amber-300 text-xs font-mono font-black animate-bounce shrink-0">
+                <Flame className="w-3.5 h-3.5 text-amber-400" />
+                <span>{combo} COMBO!</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

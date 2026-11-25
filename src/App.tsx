@@ -306,6 +306,8 @@ export const App: React.FC = () => {
           playerTeam={playerTeam}
           statusMessage={statusMessage}
           combo={combo}
+          onPassTurn={handlePassTurn}
+          canPassTurn={isPlayerActionAllowed}
         />
 
         {/* 🃏 3. [카드판] 팀장힌트 바로 아래 위치 (팀장일 경우 키카드 투시 뷰 활성화) */}

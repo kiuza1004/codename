@@ -1,6 +1,6 @@
-export const APP_VERSION = 'v2.2.1 AI PACING';
-export const APP_BUILD_DATE = '2026-11-26 00:52 KST';
-export const APP_CHANGELOG = 'AI 팀 힌트 수신 후 1~2초 숙지 대기 및 전술 카드 조준·지목 과정 시각화';
+export const APP_VERSION = 'v2.2.2 QUICK PASS';
+export const APP_BUILD_DATE = '2026-11-26 01:00 KST';
+export const APP_CHANGELOG = '팀장 힌트창 우측 상단 퀵 턴 종료 버튼 배치 및 시선 동선 최적화';
 
 const CAREER_STORAGE_KEY = 'codenames_argon_career_v2';
 
