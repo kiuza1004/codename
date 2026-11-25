@@ -176,12 +176,19 @@ export const App: React.FC = () => {
 
   // 팀장의 직접 힌트 전송
   const handleSubmitSpymasterHint = (word: string, count: number) => {
+    const currentUnrevealedTeamCards = cards
+      .filter(c => c.type === playerTeam && !c.revealed)
+      .slice(0, count)
+      .map(c => c.word);
+
     const newHint: Hint = {
       word,
       count,
+      targetWords: currentUnrevealedTeamCards,
       turnNumber: hintHistory.length + 1,
       confidence: 100,
       safetyLevel: 'SAFE',
+      explanation: `팀장이 [${currentUnrevealedTeamCards.join(', ')}] 카드를 의도하여 "${word}" (${count}장) 지령을 내렸습니다.`,
     };
     applySpymasterHint(newHint);
     if (isMultiplayerActive) {

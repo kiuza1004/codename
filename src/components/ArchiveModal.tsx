@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GameArchiveRecord } from '../types/multiplayer';
 import { archiveManager } from '../utils/archive';
-import { History, Download, Trash2, ChevronLeft, Calendar, Shield, X } from 'lucide-react';
+import { History, Download, Trash2, ChevronLeft, Calendar, Shield, X, Target } from 'lucide-react';
 
 interface ArchiveModalProps {
   isOpen: boolean;
@@ -137,29 +137,61 @@ export const ArchiveModal: React.FC<ArchiveModalProps> = ({ isOpen, onClose }) =
                 </div>
               </div>
 
-              {/* 2. 턴별 힌트 및 행동 로그 히스토리 */}
+              {/* 2. 턴별 힌트 및 유도 타깃 복기 히스토리 */}
               <div>
                 <h4 className="text-xs font-mono font-bold text-cyan-300 mb-2 flex items-center gap-1.5">
-                  <History className="w-4 h-4" /> 턴별 작전 힌트 기록
+                  <History className="w-4 h-4" /> 턴별 작전 힌트 & 유도 타깃 카드 복기
                 </h4>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2.5">
                   {selectedArchive.hintHistory.length > 0 ? (
                     selectedArchive.hintHistory.map((h, i) => (
                       <div
                         key={i}
-                        className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between text-xs font-mono"
+                        className="p-3.5 rounded-2xl bg-slate-950/90 border border-slate-800 flex flex-col gap-2 text-xs font-mono shadow-sm"
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="text-slate-500">#{i + 1}턴</span>
-                          <span className="font-bold text-cyan-300 text-sm">"{h.word}"</span>
-                          <span className="px-2 py-0.5 rounded bg-amber-950/70 border border-amber-500/40 text-amber-300 font-bold">
-                            {h.count}장
-                          </span>
+                        {/* 힌트 단어 & 장수 & 확신도 */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-900 pb-2">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-slate-500 font-bold">#{i + 1}턴</span>
+                            <span className="text-base font-black text-cyan-300 font-spy px-2.5 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/40">
+                              "{h.word}"
+                            </span>
+                            <span className="px-2 py-0.5 rounded-lg bg-amber-950/80 border border-amber-500/50 text-amber-300 font-black">
+                              {h.count}장
+                            </span>
+                          </div>
+                          {h.confidence && (
+                            <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
+                              AI 확신도 {h.confidence}%
+                            </span>
+                          )}
                         </div>
-                        {h.confidence && (
-                          <span className="text-[10px] text-emerald-400 font-bold">
-                            AI 확신도 {h.confidence}%
+
+                        {/* 🎯 힌트가 유도한 목표 카드 단어들 (핵심 요구사항 반영) */}
+                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] pt-0.5">
+                          <span className="text-slate-400 font-bold flex items-center gap-1">
+                            <Target className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>팀장 유도 타깃:</span>
                           </span>
+                          {h.targetWords && h.targetWords.length > 0 ? (
+                            h.targetWords.map((tw, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-0.5 rounded-md bg-cyan-950/90 text-cyan-200 border border-cyan-400/50 font-bold text-xs"
+                              >
+                                {tw}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-slate-500 italic">유도 정보 없음</span>
+                          )}
+                        </div>
+
+                        {/* 상세 해설 텍스트 */}
+                        {h.explanation && (
+                          <div className="text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded-xl border border-slate-800/80 leading-relaxed mt-0.5">
+                            💡 {h.explanation}
+                          </div>
                         )}
                       </div>
                     ))
