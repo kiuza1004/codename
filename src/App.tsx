@@ -15,7 +15,7 @@ import { ArchiveModal } from './components/ArchiveModal';
 import { SpymasterInputBar } from './components/SpymasterInputBar';
 import { archiveManager } from './utils/archive';
 import { APP_VERSION } from './constants/version';
-import { Hint } from './types/game';
+import { Hint, CardItem } from './types/game';
 
 export const App: React.FC = () => {
   const {
@@ -119,6 +119,44 @@ export const App: React.FC = () => {
       broadcastCardPick(cardId);
     }
   }, [selectCard, isMultiplayerActive, broadcastCardPick]);
+
+  // 🤖 관전자 모드 및 AI 요원 자동 카드 추리/지목 루프
+  const isSpectator = isMultiplayerActive && localPlayer?.role === 'spectator';
+  const currentTeamOperativeRole = playerTeam === 'red' ? 'red_operative' : 'blue_operative';
+  const isOperativeAi = isMultiplayerActive
+    ? (isSpectator || !!players.find(p => p.role === currentTeamOperativeRole)?.isAi)
+    : false;
+
+  useEffect(() => {
+    if (!isOperativeAi || phase !== 'playing' || turn !== 'player_turn' || guessesLeft <= 0) {
+      return;
+    }
+
+    const unrevealedCards = cards.filter(c => !c.revealed);
+    if (unrevealedCards.length === 0) return;
+
+    // AI 요원이 1.8초 동안 고민 후 카드 지목
+    const timer = setTimeout(() => {
+      const myTeamCards = unrevealedCards.filter(c => c.type === playerTeam);
+      const civilianCards = unrevealedCards.filter(c => c.type === 'neutral');
+
+      // 88% 확률로 아군 카드 선택, 12% 확률로 민간인 카드 실수
+      let chosenCard: CardItem | null = null;
+      if (myTeamCards.length > 0 && (Math.random() < 0.88 || civilianCards.length === 0)) {
+        chosenCard = myTeamCards[Math.floor(Math.random() * myTeamCards.length)];
+      } else if (civilianCards.length > 0) {
+        chosenCard = civilianCards[Math.floor(Math.random() * civilianCards.length)];
+      } else {
+        chosenCard = unrevealedCards[0];
+      }
+
+      if (chosenCard) {
+        handleSelectCard(chosenCard.id);
+      }
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [isOperativeAi, phase, turn, guessesLeft, cards, playerTeam, handleSelectCard]);
 
   // 턴 패스 핸들러
   const handlePassTurn = useCallback(() => {
