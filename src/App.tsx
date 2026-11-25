@@ -29,6 +29,9 @@ export const App: React.FC = () => {
     hintHistory,
     guessesLeft,
     statusMessage,
+    setStatusMessage,
+    targetingCardId,
+    setTargetingCardId,
     winner,
     isShuffling,
     playerRemaining,
@@ -120,7 +123,7 @@ export const App: React.FC = () => {
     }
   }, [selectCard, isMultiplayerActive, broadcastCardPick]);
 
-  // 🤖 관전자 모드 및 AI 요원 자동 카드 추리/지목 루프
+  // 🤖 관전자 모드 및 AI 요원 자동 카드 추리/지목 루프 (1~2초 숙지 후 조준 및 순차 지목)
   const isSpectator = isMultiplayerActive && localPlayer?.role === 'spectator';
   const currentTeamOperativeRole = playerTeam === 'red' ? 'red_operative' : 'blue_operative';
   const isOperativeAi = isMultiplayerActive
@@ -129,20 +132,30 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     if (!isOperativeAi || phase !== 'playing' || turn !== 'player_turn' || guessesLeft <= 0) {
+      setTargetingCardId(null);
       return;
     }
 
     const unrevealedCards = cards.filter(c => !c.revealed);
     if (unrevealedCards.length === 0) return;
 
-    // AI 요원이 1.8초 동안 고민 후 카드 지목
-    const timer = setTimeout(() => {
+    let timer1: ReturnType<typeof setTimeout> | null = null;
+    let timer2: ReturnType<typeof setTimeout> | null = null;
+
+    // 1단계: 사용자가 팀장의 힌트(단어, 수량)를 확인할 수 있도록 1.8초 동안 대기 및 분석 안내
+    setStatusMessage(`AI 요원이 팀장의 지령을 분석하며 작전 카드를 탐색 중입니다...`);
+
+    timer1 = setTimeout(() => {
+      // 힌트 유도 타깃 카드가 남아있다면 1순위로 선정
+      const targetWords = currentHint?.targetWords || [];
+      const matchingTargetCards = unrevealedCards.filter(c => targetWords.includes(c.word));
       const myTeamCards = unrevealedCards.filter(c => c.type === playerTeam);
       const civilianCards = unrevealedCards.filter(c => c.type === 'neutral');
 
-      // 88% 확률로 아군 카드 선택, 12% 확률로 민간인 카드 실수
       let chosenCard: CardItem | null = null;
-      if (myTeamCards.length > 0 && (Math.random() < 0.88 || civilianCards.length === 0)) {
+      if (matchingTargetCards.length > 0) {
+        chosenCard = matchingTargetCards[0];
+      } else if (myTeamCards.length > 0 && (Math.random() < 0.88 || civilianCards.length === 0)) {
         chosenCard = myTeamCards[Math.floor(Math.random() * myTeamCards.length)];
       } else if (civilianCards.length > 0) {
         chosenCard = civilianCards[Math.floor(Math.random() * civilianCards.length)];
@@ -150,13 +163,27 @@ export const App: React.FC = () => {
         chosenCard = unrevealedCards[0];
       }
 
-      if (chosenCard) {
-        handleSelectCard(chosenCard.id);
-      }
+      if (!chosenCard) return;
+
+      // 2단계: AI 요원이 목표 카드를 1.5초간 조준(Targeting)하여 화면에 네온 펄스 효과 점등
+      setTargetingCardId(chosenCard.id);
+      setStatusMessage(`AI 요원이 [${chosenCard.word}] 카드를 목표로 검토 중입니다...`);
+
+      // 3단계: 1.5초 후 확정 지목 및 카드 뒤집기
+      timer2 = setTimeout(() => {
+        setTargetingCardId(null);
+        if (chosenCard) {
+          handleSelectCard(chosenCard.id);
+        }
+      }, 1500);
     }, 1800);
 
-    return () => clearTimeout(timer);
-  }, [isOperativeAi, phase, turn, guessesLeft, cards, playerTeam, handleSelectCard]);
+    return () => {
+      if (timer1) clearTimeout(timer1);
+      if (timer2) clearTimeout(timer2);
+      setTargetingCardId(null);
+    };
+  }, [isOperativeAi, phase, turn, guessesLeft, cards, playerTeam, currentHint, handleSelectCard, setTargetingCardId, setStatusMessage]);
 
   // 턴 패스 핸들러
   const handlePassTurn = useCallback(() => {
@@ -289,6 +316,7 @@ export const App: React.FC = () => {
           onClearMarks={clearAllMarks}
           disabled={!isPlayerActionAllowed}
           isSpymasterView={isSpymasterRole}
+          targetingCardId={targetingCardId}
         />
 
         {/* 📝 팀장 역할일 때: 하단 힌트 입력 지령 바 */}

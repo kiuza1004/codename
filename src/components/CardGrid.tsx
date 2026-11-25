@@ -10,6 +10,7 @@ interface CardGridProps {
   onClearMarks?: () => void;
   disabled: boolean;
   isSpymasterView?: boolean;
+  targetingCardId?: number | null;
 }
 
 // 🔤 글자 길이에 따른 최적화 폰트 크기 계산 (긴 단어 잘림 방지)
@@ -35,6 +36,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   onClearMarks,
   disabled,
   isSpymasterView = false,
+  targetingCardId = null,
 }) => {
   // 🔍 모바일/PC 사용자 편의용 카드 확대 보기(Large View) 토글 및 그림 카드 정밀 확대 모달
   const [isLargeZoom, setIsLargeZoom] = useState(false);
@@ -94,6 +96,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
         {cards.map((card) => {
           const isClickable = !card.revealed && !disabled && !isSpymasterView;
           const isMarked = Boolean(card.marked && !card.revealed);
+          const isTargeting = Boolean(targetingCardId !== null && targetingCardId !== undefined && card.id === targetingCardId && !card.revealed);
 
           let spymasterBorderClass = '';
           let spymasterBadge = null;
@@ -113,12 +116,21 @@ export const CardGrid: React.FC<CardGridProps> = ({
             }
           }
 
+          let cardFrontStyle = 'border-slate-700/80 bg-gradient-to-b from-[#1e2738] to-[#141b28]';
+          if (isTargeting) {
+            cardFrontStyle = 'border-2 border-cyan-400 bg-gradient-to-b from-cyan-950/90 via-[#1e2738] to-[#141b28] ring-4 ring-cyan-400/60 shadow-xl shadow-cyan-500/50 animate-pulse';
+          } else if (isMarked) {
+            cardFrontStyle = 'border-2 border-amber-400 bg-gradient-to-b from-amber-950/60 via-[#1e2738] to-[#141b28] ring-2 ring-amber-400/30 shadow-lg shadow-amber-500/10';
+          } else if (spymasterBorderClass) {
+            cardFrontStyle = spymasterBorderClass;
+          }
+
           return (
             <div
               key={card.id}
               className={`perspective-1000 select-none transition-all duration-300 ${
                 isLargeZoom ? 'h-28 sm:h-36 md:h-40' : 'h-20 sm:h-28 md:h-32'
-              }`}
+              } ${isTargeting ? 'scale-[1.03] z-20' : ''}`}
               onMouseEnter={() => {
                 if (isClickable) sound.playHover();
               }}
@@ -137,12 +149,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
               >
                 {/* 앞면 (미공개 상태: 낱말 카드 or 그림 카드) */}
                 <div
-                  className={`absolute inset-0 backface-hidden rounded-xl sm:rounded-2xl border p-1.5 sm:p-2.5 flex flex-col justify-between items-center transition-all group overflow-hidden shadow-inner ${
-                    spymasterBorderClass ||
-                    (isMarked
-                      ? 'border-2 border-amber-400 bg-gradient-to-b from-amber-950/60 via-[#1e2738] to-[#141b28] ring-2 ring-amber-400/30 shadow-lg shadow-amber-500/10'
-                      : 'border-slate-700/80 bg-gradient-to-b from-[#1e2738] to-[#141b28]')
-                  }`}
+                  className={`absolute inset-0 backface-hidden rounded-xl sm:rounded-2xl border p-1.5 sm:p-2.5 flex flex-col justify-between items-center transition-all group overflow-hidden shadow-inner ${cardFrontStyle}`}
                 >
                   {/* 상단 바: 번호, 팀장 투시 배지 & 후보 핀 마킹 버튼 */}
                   <div className="w-full flex justify-between items-center z-10">
@@ -151,6 +158,12 @@ export const CardGrid: React.FC<CardGridProps> = ({
                         #{card.id + 1}
                       </span>
                       {spymasterBadge}
+                      {isTargeting && (
+                        <span className="flex items-center gap-1 bg-cyan-500 text-slate-950 font-black text-[7px] sm:text-[9px] px-1.5 py-0.2 rounded-full shadow-md animate-bounce">
+                          <Target className="w-2.5 h-2.5 animate-spin" />
+                          <span>조준 중</span>
+                        </span>
+                      )}
                     </div>
 
                     {/* 📌 후보 핀 마킹 버튼 (카드 뒤집기와 독립 동작) */}
@@ -198,7 +211,11 @@ export const CardGrid: React.FC<CardGridProps> = ({
 
                   {/* 하단 데코 라인 또는 후보 배지 / 그림 확대 버튼 */}
                   <div className="w-full flex justify-between items-center z-10">
-                    {isMarked ? (
+                    {isTargeting ? (
+                      <span className="text-[7px] sm:text-[9px] font-mono font-black text-cyan-300 bg-cyan-950/90 px-1.5 py-0.2 rounded border border-cyan-400/60 mx-auto animate-pulse">
+                        🎯 분석 목표
+                      </span>
+                    ) : isMarked ? (
                       <span className="text-[7px] sm:text-[9px] font-mono font-black text-amber-300 bg-amber-950/90 px-1.5 py-0.2 rounded border border-amber-400/50 mx-auto">
                         ★ 후보
                       </span>

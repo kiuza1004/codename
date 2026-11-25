@@ -1,6 +1,6 @@
-export const APP_VERSION = 'v2.2.0 MULTIPLAYER';
-export const APP_BUILD_DATE = '2026-11-26 00:00 KST';
-export const APP_CHANGELOG = '다인 P2P 멀티플레이어 대전, 실시간 WebRTC 보이스 채팅, 기밀 작전 보관소(복기실) 탑재';
+export const APP_VERSION = 'v2.2.1 AI PACING';
+export const APP_BUILD_DATE = '2026-11-26 00:52 KST';
+export const APP_CHANGELOG = 'AI 팀 힌트 수신 후 1~2초 숙지 대기 및 전술 카드 조준·지목 과정 시각화';
 
 const CAREER_STORAGE_KEY = 'codenames_argon_career_v2';
 

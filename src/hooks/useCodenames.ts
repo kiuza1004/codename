@@ -38,6 +38,7 @@ export function useCodenames() {
   const [isListening, setIsListening] = useState<boolean>(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [combo, setCombo] = useState<number>(0);
+  const [targetingCardId, setTargetingCardId] = useState<number | null>(null);
   const [career, setCareer] = useState<AgentCareerStats>(() => loadCareerStats());
 
   const [stats, setStats] = useState<GameStats>({
@@ -227,6 +228,7 @@ export function useCodenames() {
       setHintHistory([]);
       setGuessesLeft(0);
       setCombo(0);
+      setTargetingCardId(null);
       setStats({
         turnsTaken: 1,
         correctGuesses: 0,
@@ -273,10 +275,11 @@ export function useCodenames() {
     }
   }, [phase, turn, cards, triggerSpymasterHint]);
 
-  // 상대팀(AI) 턴 시뮬레이션: 상대 팀장 힌트 제시 및 상대 요원의 답 맞추기 과정 순차 연출
+  // 상대팀(AI) 턴 시뮬레이션: 상대 팀장 힌트 제시 및 상대 요원의 답 맞추기 과정 순차 연출 (1~2초 숙지 및 조준 과정)
   const handleOpponentTurn = useCallback((updatedCards: CardItem[], currentHistory: Hint[]) => {
     setTurn('opponent_turn');
     setCombo(0);
+    setTargetingCardId(null);
     speech.cancelSpeech();
 
     const oppTeam: TeamColor = playerTeam === 'red' ? 'blue' : 'red';
@@ -307,7 +310,7 @@ export function useCodenames() {
       speech.speakHint(oppTeamLabel, oppHint.word, oppHint.count);
       setStatusMessage(`상대(${oppTeamLabel}) 팀장 힌트: "${oppHint.word}" (${oppHint.count}장)`);
 
-      // 2단계: 상대 요원 AI가 힌트를 수신하고 카드를 순차적으로 맞추는 과정
+      // 2단계: 사용자가 힌트 단어와 숫자를 충분히 볼 수 있도록 2.2초 대기 후 요원 추리 시작
       setTimeout(() => {
         // 상대가 맞출 카드 목록 결정 (유도 타깃 또는 상대 카드 중)
         let targetWordsToPick = oppHint.targetWords && oppHint.targetWords.length > 0
@@ -330,17 +333,20 @@ export function useCodenames() {
           setTimeout(() => {
             setStats(prev => ({ ...prev, turnsTaken: prev.turnsTaken + 1 }));
             triggerSpymasterHint(updatedCards, nextHistory);
-          }, 1500);
+          }, 2000);
           return;
         }
 
-        // 카드를 1장씩 순차적으로 지목하여 뒤집기
+        setStatusMessage(`상대 요원이 "${oppHint.word}" 힌트를 수신하고 목표 카드를 탐색 중입니다...`);
+
+        // 카드를 1장씩 순차적으로 조준(Targeting 1.5초) -> 지목(Reveal) -> 다음(1.6초) 과정 연출
         let currentBoardCards = [...updatedCards];
         let pickIndex = 0;
 
-        const pickNextCard = () => {
+        const stepTargetCard = () => {
           if (pickIndex >= wordsToReveal.length) {
             // 모든 지목 완료 -> 아군 턴으로 복귀
+            setTargetingCardId(null);
             const remaining = currentBoardCards.filter(c => c.type === oppTeam && !c.revealed).length;
             if (remaining === 0) {
               setWinner(oppTeam);
@@ -351,18 +357,30 @@ export function useCodenames() {
               return;
             }
 
-            setStatusMessage(`상대 팀의 턴이 종료되었습니다. 아군 팀장 AI가 다음 힌트를 연산 중입니다...`);
+            setStatusMessage(`상대 팀의 작전이 완료되었습니다. 아군 팀장 AI가 다음 지령을 연산 중입니다...`);
             setTimeout(() => {
               setStats(prev => ({ ...prev, turnsTaken: prev.turnsTaken + 1 }));
               triggerSpymasterHint(currentBoardCards, nextHistory);
-            }, 1500);
+            }, 2000);
             return;
           }
 
           const targetWord = wordsToReveal[pickIndex];
           const cardToReveal = currentBoardCards.find(c => c.word === targetWord && !c.revealed);
 
-          if (cardToReveal) {
+          if (!cardToReveal) {
+            pickIndex++;
+            setTimeout(stepTargetCard, 800);
+            return;
+          }
+
+          // [과정 1]: AI 요원이 후보 카드를 조준(Targeting)하여 1.5초간 보드에 강조 표시
+          setTargetingCardId(cardToReveal.id);
+          setStatusMessage(`상대 요원이 [${cardToReveal.word}] 카드를 목표로 검토 중입니다... (${pickIndex + 1}/${wordsToReveal.length})`);
+
+          // [과정 2]: 1.5초 고민 후 카드 확정 지목 및 뒤집기
+          setTimeout(() => {
+            setTargetingCardId(null);
             currentBoardCards = currentBoardCards.map(c =>
               c.id === cardToReveal.id
                 ? { ...c, revealed: true, marked: false, revealedBy: 'opponent' as const }
@@ -372,18 +390,18 @@ export function useCodenames() {
             sound.playCardFlip();
             sound.playOpponentHit();
             setStatusMessage(`상대 요원이 [${cardToReveal.word}] 요원을 확보했습니다! (${pickIndex + 1}/${wordsToReveal.length})`);
-          }
 
-          pickIndex++;
-          setTimeout(pickNextCard, 1400);
+            pickIndex++;
+            // [과정 3]: 다음 카드 탐색 전 1.6초 여유
+            setTimeout(stepTargetCard, 1600);
+          }, 1500);
         };
 
-        // 첫 번째 카드 지목 시작
-        setStatusMessage(`상대 요원이 "${oppHint.word}" 힌트를 분석하여 카드를 지목 중입니다...`);
-        setTimeout(pickNextCard, 1200);
+        // 힌트 숙지 후 첫 번째 카드 조준 시작
+        setTimeout(stepTargetCard, 1400);
 
-      }, 2000);
-    }, 1500);
+      }, 2200);
+    }, 1800);
   }, [playerTeam, difficulty, triggerSpymasterHint, recordGameOutcome, stats.correctGuesses]);
 
   // 카드 선택 (지목) 처리
@@ -582,6 +600,7 @@ export function useCodenames() {
   const resetToSetup = useCallback(() => {
     hasTriggeredFirstHint.current = false;
     speech.cancelSpeech();
+    setTargetingCardId(null);
     setPhase('setup');
     setWinner(null);
   }, []);
@@ -597,6 +616,9 @@ export function useCodenames() {
     hintHistory,
     guessesLeft,
     statusMessage,
+    setStatusMessage,
+    targetingCardId,
+    setTargetingCardId,
     winner,
     isShuffling,
     playerRemaining,
