@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useCodenames } from './hooks/useCodenames';
+import { useMultiplayerGame } from './hooks/useMultiplayerGame';
 import { Header } from './components/Header';
 import { SecretHintBanner } from './components/SecretHintBanner';
 import { SpymasterPanel } from './components/SpymasterPanel';
@@ -8,7 +9,13 @@ import { ActionControls } from './components/ActionControls';
 import { SetupModal } from './components/SetupModal';
 import { GameOverModal } from './components/GameOverModal';
 import { RuleModal } from './components/RuleModal';
+import { MultiplayerModal } from './components/MultiplayerModal';
+import { VoiceChatBar } from './components/VoiceChatBar';
+import { ArchiveModal } from './components/ArchiveModal';
+import { SpymasterInputBar } from './components/SpymasterInputBar';
+import { archiveManager } from './utils/archive';
 import { APP_VERSION } from './constants/version';
+import { Hint } from './types/game';
 
 export const App: React.FC = () => {
   const {
@@ -43,15 +50,138 @@ export const App: React.FC = () => {
     passTurn,
     toggleVoiceInput,
     resetToSetup,
+    syncBoardState,
+    applySpymasterHint,
   } = useCodenames();
 
   const [showRules, setShowRules] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
 
-  const isPlayerActionAllowed = phase === 'playing' && turn === 'player_turn' && guessesLeft > 0;
+  // 🌐 멀티플레이 P2P 및 보이스 통신 훅 연결
+  const {
+    isModalOpen: isMultiplayerModalOpen,
+    setIsModalOpen: setIsMultiplayerModalOpen,
+    isMultiplayerActive,
+    roomId,
+    isHost,
+    players,
+    localPlayer,
+    isConnected,
+    connectionStatus,
+    isVoiceActive,
+    isMuted,
+    isDeafened,
+    createRoom,
+    joinRoom,
+    selectRole,
+    toggleAiFill,
+    toggleVoice,
+    toggleMute,
+    toggleDeafen,
+    broadcastStartGame,
+    broadcastCardPick,
+    broadcastHint,
+    broadcastPassTurn,
+  } = useMultiplayerGame({
+    onSyncReceivedBoard: (receivedCards, mode, initialTurn, initialHint) => {
+      syncBoardState(receivedCards, mode, initialTurn, initialHint);
+    },
+    onRemoteCardPick: (cardId) => {
+      selectCard(cardId);
+    },
+    onRemoteHintSubmit: (hint) => {
+      applySpymasterHint(hint);
+    },
+    onRemotePassTurn: () => {
+      passTurn();
+    },
+  });
+
+  // 역할 판별
+  const isSpymasterRole = isMultiplayerActive && (
+    localPlayer?.role === 'red_spymaster' ||
+    localPlayer?.role === 'blue_spymaster' ||
+    localPlayer?.role === 'spectator'
+  );
+
+  const isMySpymasterTurn = isMultiplayerActive && (
+    (localPlayer?.role === 'red_spymaster' && playerTeam === 'red' && turn === 'spymaster_thinking') ||
+    (localPlayer?.role === 'blue_spymaster' && playerTeam === 'blue' && turn === 'spymaster_thinking')
+  );
+
+  // 요원 클릭 권한 (팀장/관전자는 지목 불가)
+  const isPlayerActionAllowed = !isSpymasterRole && phase === 'playing' && turn === 'player_turn' && guessesLeft > 0;
+
+  // 카드 선택 핸들러 (싱글 및 멀티 동기화)
+  const handleSelectCard = useCallback((cardId: number) => {
+    selectCard(cardId);
+    if (isMultiplayerActive) {
+      broadcastCardPick(cardId);
+    }
+  }, [selectCard, isMultiplayerActive, broadcastCardPick]);
+
+  // 턴 패스 핸들러
+  const handlePassTurn = useCallback(() => {
+    passTurn();
+    if (isMultiplayerActive) {
+      broadcastPassTurn();
+    }
+  }, [passTurn, isMultiplayerActive, broadcastPassTurn]);
+
+  // 멀티플레이 호스트의 게임 시작
+  const handleHostStartGame = () => {
+    startGame(difficulty, playerTeam, gameMode);
+    setTimeout(() => {
+      broadcastStartGame(cards, gameMode, 'spymaster_thinking');
+    }, 100);
+  };
+
+  // 팀장의 직접 힌트 전송
+  const handleSubmitSpymasterHint = (word: string, count: number) => {
+    const newHint: Hint = {
+      word,
+      count,
+      turnNumber: hintHistory.length + 1,
+      confidence: 100,
+      safetyLevel: 'SAFE',
+    };
+    applySpymasterHint(newHint);
+    if (isMultiplayerActive) {
+      broadcastHint(newHint);
+    }
+  };
+
+  // 📜 게임 종료 시 작전 보관소(Archive) 자동 저장
+  const hasSavedArchive = React.useRef<string | null>(null);
+  useEffect(() => {
+    if (phase === 'gameover' && winner && hasSavedArchive.current !== `${winner}_${cards[0]?.word}`) {
+      hasSavedArchive.current = `${winner}_${cards[0]?.word}`;
+      archiveManager.saveArchive({
+        title: `${gameMode === 'picture' ? '5×4 그림' : '5×5 낱말'} 작전 (${
+          winner === 'assassin_loss' ? '암살자 피격 실패' : `${winner.toUpperCase()} 팀 승리`
+        })`,
+        date: new Date().toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        mode: gameMode,
+        winner: winner === 'assassin_loss' ? 'assassin' : winner,
+        playerTeam,
+        isMultiplayer: isMultiplayerActive,
+        players: isMultiplayerActive
+          ? players.map(p => ({ name: p.name, role: p.role, isAi: p.isAi }))
+          : [
+              { name: '현장 요원 (플레이어)', role: playerTeam === 'red' ? 'red_operative' : 'blue_operative' },
+              { name: '스파이마스터 AI', role: playerTeam === 'red' ? 'red_spymaster' : 'blue_spymaster', isAi: true },
+            ],
+        cards,
+        hintHistory,
+        actionLogs: [],
+        totalTurns: stats.turnsTaken || hintHistory.length,
+      });
+    }
+  }, [phase, winner, gameMode, playerTeam, isMultiplayerActive, players, cards, hintHistory, stats]);
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-slate-100 flex flex-col justify-between selection:bg-cyan-500 selection:text-white font-spy">
-      {/* 상단 기밀 HUD 헤더 (다단 반응형 레이아웃 + 버전 정보 + 캐시 갱신) */}
+      {/* 상단 기밀 HUD 헤더 (다단 반응형 + 멀티플레이 & 작전 복기 버튼) */}
       <Header
         playerTeam={playerTeam}
         difficulty={difficulty}
@@ -65,9 +195,27 @@ export const App: React.FC = () => {
         onOpenRules={() => setShowRules(true)}
         onReset={resetToSetup}
         career={career}
+        onOpenMultiplayer={() => setIsMultiplayerModalOpen(true)}
+        onOpenArchive={() => setShowArchiveModal(true)}
+        isMultiplayerActive={isMultiplayerActive}
       />
 
-      {/* 메인 작전 구역 (엄격한 상하 레이아웃 순서 유지) */}
+      {/* 🎙️ 실시간 보이스 통화 바 (멀티플레이 활성화 시 전원 동시 음성 통화) */}
+      {isMultiplayerActive && (
+        <VoiceChatBar
+          players={players}
+          localPlayer={localPlayer}
+          isVoiceActive={isVoiceActive}
+          onToggleVoice={toggleVoice}
+          onToggleMute={toggleMute}
+          onToggleDeafen={toggleDeafen}
+          isMuted={isMuted}
+          isDeafened={isDeafened}
+          roomId={roomId}
+        />
+      )}
+
+      {/* 메인 작전 구역 (엄격한 3단 상하 레이아웃 유지) */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-2 sm:py-4 flex flex-col justify-between gap-2.5 sm:gap-3.5">
         {/* 🎯 1. [암호힌트] 팀장힌트 위로 배치 (선택 시에만 노출) */}
         <SecretHintBanner
@@ -78,7 +226,7 @@ export const App: React.FC = () => {
           disabled={!isPlayerActionAllowed}
         />
 
-        {/* 🤖 2. [2번 패널] 맨 위: 이전 힌트 기록 / 바로 아래: 팀장 힌트 (카드 바로 위) */}
+        {/* 🤖 2. [2번 패널] 맨 위: 이전 힌트 기록 / 바로 아래: 팀장 힌트 본부 (카드 바로 위) */}
         <SpymasterPanel
           currentHint={currentHint}
           hintHistory={hintHistory}
@@ -88,31 +236,41 @@ export const App: React.FC = () => {
           combo={combo}
         />
 
-        {/* 🃏 3. [카드판] 팀장힌트 바로 아래 위치 (낱말 5x5 / 그림 5x4 + 후보 핀 마킹 & 확대) */}
+        {/* 🃏 3. [카드판] 팀장힌트 바로 아래 위치 (팀장일 경우 키카드 투시 뷰 활성화) */}
         <CardGrid
           cards={cards}
-          onSelectCard={selectCard}
+          onSelectCard={handleSelectCard}
           onToggleMarkCard={toggleMarkCard}
           onClearMarks={clearAllMarks}
           disabled={!isPlayerActionAllowed}
+          isSpymasterView={isSpymasterRole}
         />
 
-        {/* ⌨️ 4. 하단 입력 컨트롤 (자동완성 칩 + 음성 인식 + 텍스트 타이핑 + 턴 패스) */}
-        <ActionControls
-          cards={cards}
-          onSelectByWord={selectCardByWord}
-          onPassTurn={passTurn}
-          onToggleVoice={toggleVoiceInput}
-          isListening={isListening}
-          voiceError={voiceError}
-          disabled={!isPlayerActionAllowed}
-        />
+        {/* 📝 팀장 역할일 때: 하단 힌트 입력 지령 바 */}
+        {isMySpymasterTurn ? (
+          <SpymasterInputBar
+            onSubmitHint={handleSubmitSpymasterHint}
+            disabled={turn !== 'spymaster_thinking'}
+            team={playerTeam}
+          />
+        ) : (
+          /* ⌨️ 4. 요원 하단 입력 컨트롤 (자동완성 칩 + 음성 인식 + 텍스트 타이핑 + 턴 패스) */
+          <ActionControls
+            cards={cards}
+            onSelectByWord={selectCardByWord}
+            onPassTurn={handlePassTurn}
+            onToggleVoice={toggleVoiceInput}
+            isListening={isListening}
+            voiceError={voiceError}
+            disabled={!isPlayerActionAllowed}
+          />
+        )}
       </main>
 
       {/* 푸터: 크레딧 및 PWA 안내 가이드라인 */}
       <footer className="w-full bg-[#080a0f] border-t border-slate-900 py-3 px-4 text-center text-xs text-slate-500 font-mono">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>CODENAMES : SPYMASTER AI TRAINING WEBAPP <strong className="text-emerald-400">{APP_VERSION}</strong> (2026.11.25)</span>
+          <span>CODENAMES : SPYMASTER AI & MULTIPLAYER <strong className="text-emerald-400">{APP_VERSION}</strong></span>
           <span className="text-amber-500/80">
             ※ PWA 안내: 캐시가 꼬일 수 있으니 꼭 기존 앱을 완전히 삭제하고 설치하셔야 합니다.
           </span>
@@ -127,8 +285,38 @@ export const App: React.FC = () => {
         </div>
       </footer>
 
-      {/* 설정 모달 (화면 최적화 피팅 + 커리어 전적 + 낱말/그림 선택 -> 난이도 -> 팀 색상) */}
-      {phase === 'setup' && (
+      {/* 👥 다인 멀티플레이어 대기실 모달 */}
+      <MultiplayerModal
+        isOpen={isMultiplayerModalOpen}
+        onClose={() => setIsMultiplayerModalOpen(false)}
+        roomId={roomId}
+        isHost={isHost}
+        players={players}
+        localPlayer={localPlayer}
+        onSelectRole={selectRole}
+        onToggleAiFill={toggleAiFill}
+        onStartGame={handleHostStartGame}
+        onCreateRoom={createRoom}
+        onJoinRoom={joinRoom}
+        isConnected={isConnected}
+        connectionStatus={connectionStatus}
+      />
+
+      {/* 📜 작전 정밀 복기실 (아카이브) 모달 */}
+      <ArchiveModal
+        isOpen={showArchiveModal}
+        onClose={() => setShowArchiveModal(false)}
+      />
+
+      {/* 게임 규칙 모달 */}
+      {showRules && (
+        <RuleModal
+          onClose={() => setShowRules(false)}
+        />
+      )}
+
+      {/* 1인 싱글 설정 모달 */}
+      {phase === 'setup' && !isMultiplayerActive && (
         <SetupModal
           onStart={startGame}
           isShuffling={isShuffling}
@@ -136,7 +324,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 게임 오버 결과 모달 (작전 등급 S~C + 힌트 의도 복기 + 비밀 키카드 원본) */}
+      {/* 게임 오버 결과 모달 */}
       {phase === 'gameover' && (
         <GameOverModal
           winner={winner}
@@ -147,14 +335,8 @@ export const App: React.FC = () => {
           onRestart={resetToSetup}
         />
       )}
-
-      {/* 규칙 안내 모달 */}
-      {showRules && (
-        <RuleModal onClose={() => setShowRules(false)} />
-      )}
     </div>
   );
 };
 
 export default App;
-

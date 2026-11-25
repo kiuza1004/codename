@@ -1,7 +1,7 @@
 import React from 'react';
 import { Difficulty, GameMode, TeamColor } from '../types/game';
 import { APP_VERSION, AgentCareerStats, forceCacheReload, getAgentRankTitle } from '../constants/version';
-import { Shield, Volume2, VolumeX, Mic, HelpCircle, RefreshCw, RotateCcw, Award } from 'lucide-react';
+import { Shield, Volume2, VolumeX, Mic, HelpCircle, RefreshCw, RotateCcw, Award, Users, History } from 'lucide-react';
 
 interface HeaderProps {
   playerTeam: TeamColor;
@@ -16,6 +16,9 @@ interface HeaderProps {
   onOpenRules: () => void;
   onReset: () => void;
   career?: AgentCareerStats;
+  onOpenMultiplayer?: () => void;
+  onOpenArchive?: () => void;
+  isMultiplayerActive?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,6 +34,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenRules,
   onReset,
   career,
+  onOpenMultiplayer,
+  onOpenArchive,
+  isMultiplayerActive = false,
 }) => {
   const redRemaining = playerTeam === 'red' ? playerRemaining : opponentRemaining;
   const blueRemaining = playerTeam === 'blue' ? playerRemaining : opponentRemaining;
@@ -71,6 +77,34 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* 컨트롤 버튼 그룹 (글자 잘림 방지) */}
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* 👥 다인 멀티 작전실 버튼 */}
+            {onOpenMultiplayer && (
+              <button
+                onClick={onOpenMultiplayer}
+                title="다인 작전실 (P2P 멀티플레이 & 보이스)"
+                className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border transition-all flex items-center gap-1 text-[11px] font-mono font-bold whitespace-nowrap shadow-sm ${
+                  isMultiplayerActive
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400 text-white animate-pulse'
+                    : 'bg-cyan-950/70 border-cyan-500/50 text-cyan-300 hover:bg-cyan-900/60'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>{isMultiplayerActive ? '멀티(ON)' : '멀티작전'}</span>
+              </button>
+            )}
+
+            {/* 📜 작전 복기실 버튼 */}
+            {onOpenArchive && (
+              <button
+                onClick={onOpenArchive}
+                title="기밀 작전 보관소 (과거 게임 상세 복기)"
+                className="p-1.5 sm:px-2 sm:py-1.5 rounded-xl border border-indigo-700/60 bg-indigo-950/60 text-indigo-300 hover:bg-indigo-900/60 transition-all flex items-center gap-1 text-[11px] font-mono whitespace-nowrap"
+              >
+                <History className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">작전복기</span>
+              </button>
+            )}
+
             {/* 캐시 강제 새로고침 버튼 */}
             <button
               onClick={forceCacheReload}

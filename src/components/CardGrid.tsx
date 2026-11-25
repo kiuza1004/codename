@@ -9,6 +9,7 @@ interface CardGridProps {
   onToggleMarkCard?: (id: number) => void;
   onClearMarks?: () => void;
   disabled: boolean;
+  isSpymasterView?: boolean;
 }
 
 export const CardGrid: React.FC<CardGridProps> = ({
@@ -17,6 +18,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   onToggleMarkCard,
   onClearMarks,
   disabled,
+  isSpymasterView = false,
 }) => {
   // 🔍 모바일/PC 사용자 편의용 카드 확대 보기(Large View) 토글 및 그림 카드 정밀 확대 모달
   const [isLargeZoom, setIsLargeZoom] = useState(false);
@@ -74,8 +76,26 @@ export const CardGrid: React.FC<CardGridProps> = ({
       {/* 낱말 카드 (5x5, 25장) 또는 그림 카드 (5x4, 20장) 5열 고정 그리드 */}
       <div className="w-full grid grid-cols-5 gap-1.5 sm:gap-3 md:gap-4">
         {cards.map((card) => {
-          const isClickable = !card.revealed && !disabled;
+          const isClickable = !card.revealed && !disabled && !isSpymasterView;
           const isMarked = Boolean(card.marked && !card.revealed);
+
+          let spymasterBorderClass = '';
+          let spymasterBadge = null;
+          if (isSpymasterView && !card.revealed) {
+            if (card.type === 'red') {
+              spymasterBorderClass = 'border-2 border-red-500/80 bg-red-950/40';
+              spymasterBadge = <span className="text-[8px] font-mono font-black text-red-300 bg-red-950 border border-red-500/60 px-1 rounded">RED</span>;
+            } else if (card.type === 'blue') {
+              spymasterBorderClass = 'border-2 border-blue-500/80 bg-blue-950/40';
+              spymasterBadge = <span className="text-[8px] font-mono font-black text-blue-300 bg-blue-950 border border-blue-500/60 px-1 rounded">BLUE</span>;
+            } else if (card.type === 'neutral') {
+              spymasterBorderClass = 'border-2 border-amber-500/50 bg-amber-950/20';
+              spymasterBadge = <span className="text-[8px] font-mono font-bold text-amber-300/80 bg-amber-950/60 border border-amber-500/40 px-1 rounded">중립</span>;
+            } else if (card.type === 'assassin') {
+              spymasterBorderClass = 'border-2 border-rose-600 bg-black/80 ring-2 ring-rose-500/50';
+              spymasterBadge = <span className="text-[8px] font-mono font-black text-rose-400 bg-black border border-rose-600 px-1 rounded">💀암살자</span>;
+            }
+          }
 
           return (
             <div
@@ -102,16 +122,20 @@ export const CardGrid: React.FC<CardGridProps> = ({
                 {/* 앞면 (미공개 상태: 낱말 카드 or 그림 카드) */}
                 <div
                   className={`absolute inset-0 backface-hidden rounded-xl sm:rounded-2xl border p-1.5 sm:p-2.5 flex flex-col justify-between items-center transition-all group overflow-hidden shadow-inner ${
-                    isMarked
+                    spymasterBorderClass ||
+                    (isMarked
                       ? 'border-2 border-amber-400 bg-gradient-to-b from-amber-950/60 via-[#1e2738] to-[#141b28] ring-2 ring-amber-400/30 shadow-lg shadow-amber-500/10'
-                      : 'border-slate-700/80 bg-gradient-to-b from-[#1e2738] to-[#141b28]'
+                      : 'border-slate-700/80 bg-gradient-to-b from-[#1e2738] to-[#141b28]')
                   }`}
                 >
-                  {/* 상단 바: 번호 & 후보 핀 마킹 버튼 */}
+                  {/* 상단 바: 번호, 팀장 투시 배지 & 후보 핀 마킹 버튼 */}
                   <div className="w-full flex justify-between items-center z-10">
-                    <span className="text-[8px] sm:text-[10px] font-mono tracking-widest text-slate-400 opacity-75">
-                      #{card.id + 1}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[8px] sm:text-[10px] font-mono tracking-widest text-slate-400 opacity-75">
+                        #{card.id + 1}
+                      </span>
+                      {spymasterBadge}
+                    </div>
 
                     {/* 📌 후보 핀 마킹 버튼 (카드 뒤집기와 독립 동작) */}
                     {onToggleMarkCard && !card.revealed && (

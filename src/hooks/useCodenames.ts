@@ -499,6 +499,30 @@ export function useCodenames() {
     );
   }, [isListening, selectCardByWord]);
 
+  // 멀티플레이 보드 상태 외부 동기화 주입
+  const syncBoardState = useCallback((newCards: CardItem[], newMode: GameMode, newTurn: TurnPhase, newHint: Hint | null) => {
+    setCards(newCards);
+    setGameMode(newMode);
+    setTurn(newTurn);
+    setPhase('playing');
+    if (newHint) {
+      setCurrentHint(newHint);
+      setHintHistory(prev => [...prev.filter(h => h.word !== newHint.word), newHint]);
+      setGuessesLeft(newHint.count + 1);
+    }
+  }, []);
+
+  // 외부(원격 플레이어/팀장)에서 힌트 제출 시 적용
+  const applySpymasterHint = useCallback((hint: Hint) => {
+    setCurrentHint(hint);
+    setHintHistory(prev => [...prev, hint]);
+    setGuessesLeft(hint.count + 1);
+    setTurn('player_turn');
+    setStatusMessage(`목표 카드(${hint.count}장)를 지목하십시오.`);
+    sound.playHintBeep();
+    speech.speakHint(playerTeam === 'red' ? '레드' : '블루', hint.word, hint.count);
+  }, [playerTeam]);
+
   // 새 게임 준비
   const resetToSetup = useCallback(() => {
     hasTriggeredFirstHint.current = false;
@@ -539,5 +563,7 @@ export function useCodenames() {
     passTurn,
     toggleVoiceInput,
     resetToSetup,
+    syncBoardState,
+    applySpymasterHint,
   };
 }
