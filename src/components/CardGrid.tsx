@@ -12,6 +12,22 @@ interface CardGridProps {
   isSpymasterView?: boolean;
 }
 
+// 🔤 글자 길이에 따른 최적화 폰트 크기 계산 (긴 단어 잘림 방지)
+const getCardFontSize = (word: string, isLarge: boolean) => {
+  const len = word.length;
+  if (isLarge) {
+    if (len <= 2) return 'text-base sm:text-2xl md:text-3xl';
+    if (len === 3) return 'text-sm sm:text-xl md:text-2xl';
+    if (len === 4) return 'text-xs sm:text-lg md:text-xl tracking-tight';
+    return 'text-[11px] sm:text-sm md:text-base tracking-tighter leading-tight';
+  } else {
+    if (len <= 2) return 'text-xs sm:text-lg md:text-2xl';
+    if (len === 3) return 'text-[11px] sm:text-base md:text-xl';
+    if (len === 4) return 'text-[10px] sm:text-sm md:text-base tracking-tight';
+    return 'text-[9px] sm:text-xs md:text-sm tracking-tighter leading-tight';
+  }
+};
+
 export const CardGrid: React.FC<CardGridProps> = ({
   cards,
   onSelectCard,
@@ -167,16 +183,14 @@ export const CardGrid: React.FC<CardGridProps> = ({
                         dangerouslySetInnerHTML={{ __html: card.svgIcon }}
                       />
                       <span className={`${
-                        isLargeZoom ? 'text-xs sm:text-sm' : 'text-[10px] sm:text-xs'
-                      } font-bold text-slate-200 group-hover:text-cyan-200 tracking-tight truncate w-full text-center mt-0.5`}>
+                        isLargeZoom ? 'text-xs sm:text-sm' : 'text-[9px] sm:text-xs'
+                      } font-bold text-slate-200 group-hover:text-cyan-200 tracking-tight break-keep text-center leading-tight w-full mt-0.5 px-0.5`}>
                         {card.word}
                       </span>
                     </div>
                   ) : (
-                    <div className="my-auto py-1 text-center w-full px-0.5">
-                      <span className={`${
-                        isLargeZoom ? 'text-base sm:text-2xl md:text-3xl' : 'text-xs sm:text-xl md:text-2xl'
-                      } font-black tracking-wide text-slate-100 group-hover:text-cyan-300 transition-colors drop-shadow truncate block`}>
+                    <div className="my-auto py-1 text-center w-full px-0.5 flex items-center justify-center">
+                      <span className={`${getCardFontSize(card.word, isLargeZoom)} font-black text-slate-100 group-hover:text-cyan-300 transition-colors drop-shadow break-keep text-center leading-tight block w-full px-0.5`}>
                         {card.word}
                       </span>
                     </div>
@@ -247,7 +261,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                     {card.type === 'neutral' && <User className="w-5 h-5 sm:w-7 sm:h-7 text-amber-800" />}
                     {card.type === 'assassin' && <Skull className="w-5 h-5 sm:w-7 sm:h-7 text-red-500 animate-bounce" />}
 
-                    <span className={`text-[11px] sm:text-base font-black tracking-wide truncate max-w-full ${
+                    <span className={`${getCardFontSize(card.word, isLargeZoom)} font-black tracking-tight break-keep text-center leading-tight max-w-full px-0.5 ${
                       card.type === 'neutral' ? 'text-amber-950' : card.type === 'assassin' ? 'text-red-400' : 'text-white'
                     }`}>
                       {card.word}
