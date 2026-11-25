@@ -273,62 +273,117 @@ export function useCodenames() {
     }
   }, [phase, turn, cards, triggerSpymasterHint]);
 
-  // 상대팀(AI) 턴 시뮬레이션
+  // 상대팀(AI) 턴 시뮬레이션: 상대 팀장 힌트 제시 및 상대 요원의 답 맞추기 과정 순차 연출
   const handleOpponentTurn = useCallback((updatedCards: CardItem[], currentHistory: Hint[]) => {
     setTurn('opponent_turn');
     setCombo(0);
     speech.cancelSpeech();
-    setStatusMessage('상대 팀(AI)이 작전을 수행 중입니다...');
 
-    const oppTeam = playerTeam === 'red' ? 'blue' : 'red';
+    const oppTeam: TeamColor = playerTeam === 'red' ? 'blue' : 'red';
+    const oppTeamLabel = oppTeam === 'red' ? '레드' : '블루';
     const oppCards = updatedCards.filter(c => c.type === oppTeam && !c.revealed);
 
+    if (oppCards.length === 0) {
+      setWinner(oppTeam);
+      setPhase('gameover');
+      sound.playAssassin();
+      recordGameOutcome(false, stats.correctGuesses);
+      return;
+    }
+
+    // 1단계: 상대 팀장 AI 힌트 연산 및 브리핑
+    setStatusMessage(`상대(${oppTeamLabel}) 팀장 AI가 전술 키카드를 분석 중입니다...`);
+
     setTimeout(() => {
-      if (oppCards.length === 0) {
-        setWinner(oppTeam);
-        setPhase('gameover');
-        sound.playAssassin();
-        recordGameOutcome(false, stats.correctGuesses);
-        return;
-      }
+      const usedWords = currentHistory.map(h => h.word);
+      const oppHint = generateSpymasterHint(updatedCards, oppTeam, difficulty, usedWords);
+      const oppHintWithTurn = { ...oppHint, turnNumber: currentHistory.length + 1 };
+      
+      setCurrentHint(oppHintWithTurn);
+      const nextHistory = [...currentHistory, oppHintWithTurn];
+      setHintHistory(nextHistory);
+      
+      sound.playHintBeep();
+      speech.speakHint(oppTeamLabel, oppHint.word, oppHint.count);
+      setStatusMessage(`상대(${oppTeamLabel}) 팀장 힌트: "${oppHint.word}" (${oppHint.count}장)`);
 
-      let revealCount = 1;
-      if (difficulty === 'hard' && Math.random() < 0.6 && oppCards.length >= 2) {
-        revealCount = 2;
-      } else if (difficulty === 'easy' && Math.random() < 0.4) {
-        revealCount = 0;
-      }
-
-      let nextCards = [...updatedCards];
-      if (revealCount > 0) {
-        const toReveal = oppCards.slice(0, revealCount);
-        const revealIds = new Set(toReveal.map(c => c.id));
-        nextCards = nextCards.map(c =>
-          revealIds.has(c.id) ? { ...c, revealed: true, marked: false, revealedBy: 'opponent' } : c
-        );
-        sound.playOpponentHit();
-        setStatusMessage(`상대 팀이 요원 [${toReveal.map(c => c.word).join(', ')}]을(를) 확보했습니다!`);
-      } else {
-        setStatusMessage('상대 팀이 이번 턴에 요원을 확보하지 못했습니다.');
-      }
-
-      setCards(nextCards);
-
-      const remainingOpp = nextCards.filter(c => c.type === oppTeam && !c.revealed).length;
-      if (remainingOpp === 0) {
-        setWinner(oppTeam);
-        setPhase('gameover');
-        sound.playAssassin();
-        setStatusMessage('상대 팀이 모든 요원을 먼저 확보하여 작전에서 패배했습니다.');
-        recordGameOutcome(false, stats.correctGuesses);
-        return;
-      }
-
+      // 2단계: 상대 요원 AI가 힌트를 수신하고 카드를 순차적으로 맞추는 과정
       setTimeout(() => {
-        setStats(prev => ({ ...prev, turnsTaken: prev.turnsTaken + 1 }));
-        triggerSpymasterHint(nextCards, currentHistory);
-      }, 1200);
-    }, 1400);
+        // 상대가 맞출 카드 목록 결정 (유도 타깃 또는 상대 카드 중)
+        let targetWordsToPick = oppHint.targetWords && oppHint.targetWords.length > 0
+          ? oppHint.targetWords.filter(w => updatedCards.some(c => c.word === w && !c.revealed))
+          : [];
+
+        if (targetWordsToPick.length === 0) {
+          targetWordsToPick = oppCards.map(c => c.word);
+        }
+
+        // 난이도별 지목 수량
+        let pickCount = Math.min(oppHint.count, targetWordsToPick.length);
+        if (difficulty === 'easy' && Math.random() < 0.3) pickCount = Math.max(1, pickCount - 1);
+        if (difficulty === 'hard' && Math.random() < 0.4 && oppCards.length >= pickCount + 1) pickCount += 1;
+
+        const wordsToReveal = targetWordsToPick.slice(0, pickCount);
+
+        if (wordsToReveal.length === 0) {
+          setStatusMessage(`상대 요원이 이번 턴에 확실한 카드를 찾지 못해 턴을 넘겼습니다.`);
+          setTimeout(() => {
+            setStats(prev => ({ ...prev, turnsTaken: prev.turnsTaken + 1 }));
+            triggerSpymasterHint(updatedCards, nextHistory);
+          }, 1500);
+          return;
+        }
+
+        // 카드를 1장씩 순차적으로 지목하여 뒤집기
+        let currentBoardCards = [...updatedCards];
+        let pickIndex = 0;
+
+        const pickNextCard = () => {
+          if (pickIndex >= wordsToReveal.length) {
+            // 모든 지목 완료 -> 아군 턴으로 복귀
+            const remaining = currentBoardCards.filter(c => c.type === oppTeam && !c.revealed).length;
+            if (remaining === 0) {
+              setWinner(oppTeam);
+              setPhase('gameover');
+              sound.playAssassin();
+              setStatusMessage(`상대 팀이 모든 요원을 먼저 확보하여 작전에서 패배했습니다.`);
+              recordGameOutcome(false, stats.correctGuesses);
+              return;
+            }
+
+            setStatusMessage(`상대 팀의 턴이 종료되었습니다. 아군 팀장 AI가 다음 힌트를 연산 중입니다...`);
+            setTimeout(() => {
+              setStats(prev => ({ ...prev, turnsTaken: prev.turnsTaken + 1 }));
+              triggerSpymasterHint(currentBoardCards, nextHistory);
+            }, 1500);
+            return;
+          }
+
+          const targetWord = wordsToReveal[pickIndex];
+          const cardToReveal = currentBoardCards.find(c => c.word === targetWord && !c.revealed);
+
+          if (cardToReveal) {
+            currentBoardCards = currentBoardCards.map(c =>
+              c.id === cardToReveal.id
+                ? { ...c, revealed: true, marked: false, revealedBy: 'opponent' as const }
+                : c
+            );
+            setCards(currentBoardCards);
+            sound.playCardFlip();
+            sound.playOpponentHit();
+            setStatusMessage(`상대 요원이 [${cardToReveal.word}] 요원을 확보했습니다! (${pickIndex + 1}/${wordsToReveal.length})`);
+          }
+
+          pickIndex++;
+          setTimeout(pickNextCard, 1400);
+        };
+
+        // 첫 번째 카드 지목 시작
+        setStatusMessage(`상대 요원이 "${oppHint.word}" 힌트를 분석하여 카드를 지목 중입니다...`);
+        setTimeout(pickNextCard, 1200);
+
+      }, 2000);
+    }, 1500);
   }, [playerTeam, difficulty, triggerSpymasterHint, recordGameOutcome, stats.correctGuesses]);
 
   // 카드 선택 (지목) 처리

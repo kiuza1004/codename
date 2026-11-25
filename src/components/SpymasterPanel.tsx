@@ -25,7 +25,10 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
   const isOpponentTurn = turn === 'opponent_turn';
   const isThinking = turn === 'spymaster_thinking';
 
-  const teamLabel = playerTeam === 'red' ? '레드(RED)' : '블루(BLUE)';
+  const activeTeam: TeamColor = isOpponentTurn ? (playerTeam === 'red' ? 'blue' : 'red') : playerTeam;
+  const teamLabel = isOpponentTurn
+    ? (playerTeam === 'red' ? '상대팀 블루(BLUE)' : '상대팀 레드(RED)')
+    : (playerTeam === 'red' ? '아군 레드(RED)' : '아군 블루(BLUE)');
 
   return (
     <div className="w-full flex flex-col gap-2 my-1">
@@ -84,26 +87,32 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
       </div>
 
       {/* 2번 화면 - ② [바로 아래] 팀장 힌트 패널 (카드 바로 위에 위치) */}
-      <div className="w-full rounded-2xl border border-slate-700/70 bg-[#121725]/95 backdrop-blur-md p-2.5 sm:p-3.5 shadow-md">
+      <div className={`w-full rounded-2xl border p-2.5 sm:p-3.5 shadow-md transition-all ${
+        isOpponentTurn
+          ? (activeTeam === 'red' ? 'bg-[#1a0f14]/95 border-red-500/50' : 'bg-[#0f1422]/95 border-blue-500/50')
+          : 'bg-[#121725]/95 border-slate-700/70'
+      }`}>
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap flex-1">
             <div className="relative shrink-0">
               <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border shadow-inner ${
-                playerTeam === 'red' ? 'bg-red-950/70 border-red-500/60 text-red-400' : 'bg-blue-950/70 border-blue-500/60 text-blue-400'
+                activeTeam === 'red' ? 'bg-red-950/70 border-red-500/60 text-red-400' : 'bg-blue-950/70 border-blue-500/60 text-blue-400'
               }`}>
                 <Bot className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
               </div>
               <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-950 ${
-                isPlayerTurn ? 'bg-emerald-500 animate-ping' : isOpponentTurn ? 'bg-amber-500' : 'bg-cyan-500'
+                isPlayerTurn ? 'bg-emerald-500 animate-ping' : isOpponentTurn ? 'bg-amber-500 animate-pulse' : 'bg-cyan-500'
               }`}></span>
             </div>
 
             <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
               {/* 상단: 팀장 라벨 및 팀 정보 */}
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-mono font-bold tracking-wider text-slate-200">팀장 힌트</span>
+                <span className="text-xs font-mono font-bold tracking-wider text-slate-200">
+                  {isOpponentTurn ? '상대 팀장 힌트' : '팀장 힌트'}
+                </span>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-bold border ${
-                  playerTeam === 'red' ? 'bg-red-950/80 border-red-500/40 text-red-300' : 'bg-blue-950/80 border-blue-500/40 text-blue-300'
+                  activeTeam === 'red' ? 'bg-red-950/80 border-red-500/40 text-red-300' : 'bg-blue-950/80 border-blue-500/40 text-blue-300'
                 }`}>
                   {teamLabel}
                 </span>
@@ -128,7 +137,7 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
                   {/* 상태 메시지 */}
                   <div className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
                     {isThinking && <span className="text-cyan-400 flex items-center gap-1"><Radio className="w-3.5 h-3.5 animate-spin" /> 팀장 AI가 새 암호단어를 연산 중...</span>}
-                    {isOpponentTurn && <span className="text-amber-400 flex items-center gap-1"><Radio className="w-3.5 h-3.5 animate-pulse" /> 상대 팀 요원 행동 중...</span>}
+                    {isOpponentTurn && <span className="text-amber-400 flex items-center gap-1"><Radio className="w-3.5 h-3.5 animate-pulse" /> {statusMessage}</span>}
                     {isPlayerTurn && <span className="text-emerald-400 flex items-center gap-1"><Target className="w-3.5 h-3.5 shrink-0" /> <span>{statusMessage}</span></span>}
                   </div>
                 </div>
