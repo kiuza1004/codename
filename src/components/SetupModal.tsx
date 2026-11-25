@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Difficulty, GameMode, TeamColor } from '../types/game';
 import { APP_VERSION, APP_BUILD_DATE, AgentCareerStats, forceCacheReload, getAgentRankTitle } from '../constants/version';
-import { Shield, Sparkles, Shuffle, Flame, Zap, Award, Type, Image as ImageIcon, RotateCcw, Trophy } from 'lucide-react';
+import { Shield, Sparkles, Shuffle, Flame, Zap, Award, Type, Image as ImageIcon, RotateCcw, Trophy, Users, AlertTriangle, ArrowRight } from 'lucide-react';
 
 interface SetupModalProps {
   onStart: (difficulty: Difficulty, team: TeamColor, mode: GameMode) => void;
   isShuffling: boolean;
   career?: AgentCareerStats;
+  onOpenMultiplayer: () => void;
 }
 
-export const SetupModal: React.FC<SetupModalProps> = ({ onStart, isShuffling, career }) => {
+export const SetupModal: React.FC<SetupModalProps> = ({ onStart, isShuffling, career, onOpenMultiplayer }) => {
   const [selectedMode, setSelectedMode] = useState<GameMode>('word');
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('normal');
   const [selectedTeam, setSelectedTeam] = useState<TeamColor>('red');
@@ -59,6 +60,36 @@ export const SetupModal: React.FC<SetupModalProps> = ({ onStart, isShuffling, ca
               </>
             )}
           </div>
+        </div>
+
+        {/* 🚀 [최우선 선택] 다인 멀티 작전방 입장 배너 */}
+        <div className="mb-2.5 p-2.5 rounded-2xl bg-gradient-to-r from-indigo-950 via-purple-950 to-slate-950 border-2 border-indigo-500/60 shadow-lg shadow-indigo-950/50 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600/30 border border-indigo-400/50 flex items-center justify-center text-indigo-300 shrink-0">
+              <Users className="w-4 h-4 animate-pulse" />
+            </div>
+            <div>
+              <span className="text-xs font-bold font-spy text-white block">다인 멀티 작전방 (P2P 대전)</span>
+              <span className="text-[10px] text-indigo-200/80 font-mono">친구 초대 · 팀장/요원/관전 · 실시간 음성 대화</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenMultiplayer}
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:brightness-110 text-white font-bold text-xs font-mono flex items-center gap-1 shadow-md transition-all active:scale-95 shrink-0"
+          >
+            <span>방 입장</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* 1인 솔로 AI 전술 훈련 구분선 */}
+        <div className="flex items-center gap-2 mb-2">
+          <div className="h-[1px] flex-1 bg-slate-800"></div>
+          <span className="text-[10px] font-mono text-cyan-400/80 font-bold uppercase tracking-wider">
+            또는 1인 솔로 AI 훈련 설정
+          </span>
+          <div className="h-[1px] flex-1 bg-slate-800"></div>
         </div>
 
         {/* STEP 1: 카드 종류 선택 */}
@@ -203,10 +234,21 @@ export const SetupModal: React.FC<SetupModalProps> = ({ onStart, isShuffling, ca
           ) : (
             <>
               <Sparkles className="w-4 h-4" />
-              <span>카드 섞고 작전 개시</span>
+              <span>1인 작전 개시</span>
             </>
           )}
         </button>
+
+        {/* ⚠️ 웹앱 보안 취약점 안내 박스 */}
+        <div className="mt-2 p-2 sm:p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-[9px] sm:text-[10px] text-amber-200/90 font-mono leading-relaxed">
+          <div className="flex items-center gap-1 font-bold text-amber-400 mb-0.5">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <span>웹앱 보안 및 P2P 통신 유의사항</span>
+          </div>
+          <p className="text-slate-400">
+            본 서비스는 별도의 중앙 DB 서버 없이 브라우저 간 P2P(WebRTC) 및 로컬 환경에서 실행되는 오픈 웹앱입니다. 공용 Wi-Fi나 신뢰할 수 없는 네트워크 환경에서는 통신 패킷이 가로채일 위험이 있으므로, <strong>실제 계정 비밀번호나 민감한 개인정보를 암호 힌트나 닉네임으로 절대 사용하지 마십시오.</strong>
+          </p>
+        </div>
 
         {/* 하단 버전 정보 및 캐시 클리어 버튼 */}
         <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[9px] sm:text-[10px] text-slate-400 font-mono">

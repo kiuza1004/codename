@@ -315,12 +315,13 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 1인 싱글 설정 모달 */}
+      {/* 1인 싱글 설정 모달 (메인 시작 화면) */}
       {phase === 'setup' && !isMultiplayerActive && (
         <SetupModal
           onStart={startGame}
           isShuffling={isShuffling}
           career={career}
+          onOpenMultiplayer={() => setIsMultiplayerModalOpen(true)}
         />
       )}
 
