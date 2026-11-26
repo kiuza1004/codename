@@ -1,6 +1,6 @@
-export const APP_VERSION = 'v2.3.1 OPERATIVE ACTIVE';
-export const APP_BUILD_DATE = '2026-11-26 21:50 KST';
-export const APP_CHANGELOG = 'AI 요원 타이머 리셋 방지 및 힌트 수신 후 자동 지목·턴 패스 루프 완벽 복구';
+export const APP_VERSION = 'v2.3.2 MULTIPLAYER FIX';
+export const APP_BUILD_DATE = '2026-11-26 21:55 KST';
+export const APP_CHANGELOG = '메인창 다인 멀티 작전방 모달 z-index 및 렌더링 중첩 버그 수정';
 
 const CAREER_STORAGE_KEY = 'codenames_argon_career_v2';
 

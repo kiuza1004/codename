@@ -7,7 +7,7 @@ interface RuleModalProps {
 
 export const RuleModal: React.FC<RuleModalProps> = ({ onClose }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
       <div className="w-full max-w-lg bg-[#141b2b] border border-slate-700/80 rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
         {/* 닫기 버튼 */}
         <button

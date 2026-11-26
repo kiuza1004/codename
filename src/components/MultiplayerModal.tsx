@@ -74,7 +74,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn">
       <div className="w-full max-w-2xl bg-gradient-to-b from-[#131a2a] via-[#0f1422] to-[#0a0d18] border-2 border-cyan-500/50 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95dvh]">
         {/* 모달 헤더 */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-cyan-500/30 bg-slate-900/60">

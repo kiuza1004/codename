@@ -47,7 +47,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   const gradeInfo = getTacticalGrade();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 overflow-y-auto animate-fadeIn">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 overflow-y-auto animate-fadeIn">
       <div className="w-full max-w-2xl bg-[#141b2b] border border-slate-700/80 rounded-3xl p-5 sm:p-7 shadow-2xl relative my-auto max-h-[95vh] overflow-y-auto">
         {/* 상단 결과 배너 */}
         <div className="flex flex-col items-center text-center mb-4">

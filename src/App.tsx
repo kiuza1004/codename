@@ -446,8 +446,8 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 1인 싱글 설정 모달 (메인 시작 화면) */}
-      {phase === 'setup' && !isMultiplayerActive && (
+      {/* 1인 싱글 설정 모달 (메인 시작 화면 - 다인 작전실 모달이 열리면 숨김) */}
+      {phase === 'setup' && !isMultiplayerActive && !isMultiplayerModalOpen && (
         <SetupModal
           onStart={startGame}
           isShuffling={isShuffling}
