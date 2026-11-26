@@ -135,6 +135,15 @@ export const App: React.FC = () => {
     }
   }, [selectCard, isMultiplayerActive, broadcastCardPick]);
 
+
+  // 턴 패스 핸들러
+  const handlePassTurn = useCallback(() => {
+    passTurn();
+    if (isMultiplayerActive) {
+      broadcastPassTurn();
+    }
+  }, [passTurn, isMultiplayerActive, broadcastPassTurn]);
+
   // 🤖 관전자 모드 및 AI 요원 자동 카드 추리/지목 루프 (리렌더링에 안전한 독립 타이머 체인)
   const isSpectator = isMultiplayerActive && localPlayer?.role === 'spectator';
   const currentTeamOperativeRole = playerTeam === 'red' ? 'red_operative' : 'blue_operative';
@@ -225,13 +234,6 @@ export const App: React.FC = () => {
 
   }, [isOperativeAi, phase, turn, guessesLeft, cards, playerTeam, currentHint, handleSelectCard, handlePassTurn, setTargetingCardId, setStatusMessage, clearAiTimers]);
 
-  // 턴 패스 핸들러
-  const handlePassTurn = useCallback(() => {
-    passTurn();
-    if (isMultiplayerActive) {
-      broadcastPassTurn();
-    }
-  }, [passTurn, isMultiplayerActive, broadcastPassTurn]);
 
   // 멀티플레이 호스트의 게임 시작 (공석인 자리는 자동으로 AI 플레이어로 채워서 시작)
   const handleHostStartGame = () => {
