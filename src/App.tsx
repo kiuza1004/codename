@@ -17,7 +17,7 @@ import { archiveManager } from './utils/archive';
 import { p2pManager } from './utils/p2p';
 import { deduceBestCards } from './utils/operativeAi';
 import { APP_VERSION } from './constants/version';
-import { Hint, CardItem } from './types/game';
+import { Hint } from './types/game';
 import { PlayerRole } from './types/multiplayer';
 
 export const App: React.FC = () => {
