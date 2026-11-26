@@ -1,6 +1,6 @@
-export const APP_VERSION = 'v2.3.0 SPYMASTER SYNC';
-export const APP_BUILD_DATE = '2026-11-26 21:35 KST';
-export const APP_CHANGELOG = '인간 팀장 직접 지령 입력 대기, 공석 자동 AI 채우기, AI 요원 안정적 추리·지목 루프 탑재';
+export const APP_VERSION = 'v2.3.1 OPERATIVE ACTIVE';
+export const APP_BUILD_DATE = '2026-11-26 21:50 KST';
+export const APP_CHANGELOG = 'AI 요원 타이머 리셋 방지 및 힌트 수신 후 자동 지목·턴 패스 루프 완벽 복구';
 
 const CAREER_STORAGE_KEY = 'codenames_argon_career_v2';
 

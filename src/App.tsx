@@ -135,7 +135,7 @@ export const App: React.FC = () => {
     }
   }, [selectCard, isMultiplayerActive, broadcastCardPick]);
 
-  // 🤖 관전자 모드 및 AI 요원 자동 카드 추리/지목 루프 (1~2초 숙지 후 조준 및 순차 지목)
+  // 🤖 관전자 모드 및 AI 요원 자동 카드 추리/지목 루프 (리렌더링에 안전한 독립 타이머 체인)
   const isSpectator = isMultiplayerActive && localPlayer?.role === 'spectator';
   const currentTeamOperativeRole = playerTeam === 'red' ? 'red_operative' : 'blue_operative';
   // 현장 요원 자리에 사람이 배정되어 있지 않거나 AI로 지정된 경우 -> AI 요원이 자동 진행!
@@ -144,11 +144,20 @@ export const App: React.FC = () => {
   );
   const isOperativeAi = isMultiplayerActive ? (isSpectator || !isCurrentOperativeHuman) : false;
 
-  const aiTurnStepRef = useRef<string | null>(null);
+  const aiActiveStepRef = useRef<string | null>(null);
+  const aiTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // AI 타이머 일괄 정리 헬퍼
+  const clearAiTimers = useCallback(() => {
+    aiTimersRef.current.forEach(t => clearTimeout(t));
+    aiTimersRef.current = [];
+  }, []);
 
   useEffect(() => {
+    // AI 요원 턴이 아니거나 지목 기회가 없으면 타이머 및 조준 해제
     if (!isOperativeAi || phase !== 'playing' || turn !== 'player_turn' || guessesLeft <= 0) {
-      aiTurnStepRef.current = null;
+      clearAiTimers();
+      aiActiveStepRef.current = null;
       setTargetingCardId(null);
       return;
     }
@@ -156,59 +165,65 @@ export const App: React.FC = () => {
     const unrevealedCards = cards.filter(c => !c.revealed);
     if (unrevealedCards.length === 0) return;
 
-    // 현재 턴·남은 지목 횟수·힌트 단어 기반의 스텝 키로 중복 실행 및 리렌더링 리셋 방지
-    const stepKey = `${turn}_${guessesLeft}_${currentHint?.word || 'none'}`;
-    if (aiTurnStepRef.current === stepKey) {
+    // 현재 턴·지목횟수·남은카드수로 구성된 고유 단계 키 (리렌더링 시 중복/리셋 방지)
+    const stepKey = `${turn}_${guessesLeft}_${currentHint?.word || 'none'}_${unrevealedCards.length}`;
+    if (aiActiveStepRef.current === stepKey) {
       return;
     }
-    aiTurnStepRef.current = stepKey;
+    aiActiveStepRef.current = stepKey;
+    clearAiTimers();
 
-    let timer1: ReturnType<typeof setTimeout> | null = null;
-    let timer2: ReturnType<typeof setTimeout> | null = null;
+    // [1단계]: 힌트 수신 및 작전 카드 분석 (1.2초)
+    setStatusMessage(`AI 요원이 팀장의 지령 "${currentHint?.word || ''}"을(를) 분석 중입니다...`);
 
-    // 1단계: 사용자가 팀장의 힌트(단어, 수량)를 확인할 수 있도록 1.8초 동안 대기 및 분석 안내
-    setStatusMessage(`AI 요원이 팀장의 지령을 분석하며 작전 카드를 탐색 중입니다...`);
-
-    timer1 = setTimeout(() => {
-      // 힌트 유도 타깃 카드가 남아있다면 1순위로 선정
-      const currentUnrevealed = cards.filter(c => !c.revealed);
+    const t1 = setTimeout(() => {
+      const currentBoard = cards.filter(c => !c.revealed);
       const targetWords = currentHint?.targetWords || [];
-      const matchingTargetCards = currentUnrevealed.filter(c => targetWords.includes(c.word));
-      const myTeamCards = currentUnrevealed.filter(c => c.type === playerTeam);
-      const civilianCards = currentUnrevealed.filter(c => c.type === 'neutral');
+      const matchingTargetCards = currentBoard.filter(c => targetWords.includes(c.word));
+      const myTeamCards = currentBoard.filter(c => c.type === playerTeam);
+      const civilianCards = currentBoard.filter(c => c.type === 'neutral');
+
+      // 힌트 타깃 카드를 모두 맞췄고 추가 지목만 남은 경우 -> 턴을 안전하게 패스!
+      if (matchingTargetCards.length === 0 && targetWords.length > 0) {
+        setStatusMessage(`AI 요원이 팀장의 지령 수량을 달성하여 안전하게 턴을 넘깁니다.`);
+        const tPass = setTimeout(() => {
+          handlePassTurn();
+        }, 1200);
+        aiTimersRef.current.push(tPass);
+        return;
+      }
 
       let chosenCard: CardItem | null = null;
       if (matchingTargetCards.length > 0) {
         chosenCard = matchingTargetCards[0];
-      } else if (myTeamCards.length > 0 && (Math.random() < 0.88 || civilianCards.length === 0)) {
+      } else if (myTeamCards.length > 0) {
         chosenCard = myTeamCards[Math.floor(Math.random() * myTeamCards.length)];
       } else if (civilianCards.length > 0) {
-        chosenCard = civilianCards[Math.floor(Math.random() * civilianCards.length)];
+        chosenCard = civilianCards[0];
       } else {
-        chosenCard = currentUnrevealed[0];
+        chosenCard = currentBoard[0];
       }
 
       if (!chosenCard) return;
 
-      // 2단계: AI 요원이 목표 카드를 1.5초간 조준(Targeting)하여 화면에 네온 펄스 효과 점등
+      // [2단계]: 목표 카드 조준 (1.2초간 보드에 네온 펄스 링과 [🎯 조준 중] 배지 표시)
       setTargetingCardId(chosenCard.id);
-      setStatusMessage(`AI 요원이 [${chosenCard.word}] 카드를 목표로 검토 중입니다...`);
+      setStatusMessage(`AI 요원이 [${chosenCard.word}] 카드를 목표로 조준 중입니다...`);
 
-      // 3단계: 1.5초 후 확정 지목 및 카드 뒤집기
-      timer2 = setTimeout(() => {
+      // [3단계]: 1.2초 후 카드 확정 지목 및 뒤집기!
+      const t2 = setTimeout(() => {
         setTargetingCardId(null);
-        aiTurnStepRef.current = null;
+        aiActiveStepRef.current = null;
         if (chosenCard) {
           handleSelectCard(chosenCard.id);
         }
-      }, 1500);
-    }, 1800);
+      }, 1200);
+      aiTimersRef.current.push(t2);
 
-    return () => {
-      if (timer1) clearTimeout(timer1);
-      if (timer2) clearTimeout(timer2);
-    };
-  }, [isOperativeAi, phase, turn, guessesLeft, cards, playerTeam, currentHint, handleSelectCard, setTargetingCardId, setStatusMessage]);
+    }, 1200);
+    aiTimersRef.current.push(t1);
+
+  }, [isOperativeAi, phase, turn, guessesLeft, cards, playerTeam, currentHint, handleSelectCard, handlePassTurn, setTargetingCardId, setStatusMessage, clearAiTimers]);
 
   // 턴 패스 핸들러
   const handlePassTurn = useCallback(() => {
