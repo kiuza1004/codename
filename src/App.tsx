@@ -55,6 +55,8 @@ export const App: React.FC = () => {
     resetToSetup,
     syncBoardState,
     applySpymasterHint,
+    getAiSuggestedHint,
+    setIsHumanSpymaster,
   } = useCodenames();
 
   const [showRules, setShowRules] = useState(false);
@@ -112,6 +114,14 @@ export const App: React.FC = () => {
     (localPlayer?.role === 'blue_spymaster' && playerTeam === 'blue' && turn === 'spymaster_thinking')
   );
 
+  // 인간 팀장 여부 동기화 (내가 팀장일 경우 AI가 임의로 첫 힌트를 내지 않고 내 입력을 대기)
+  const isHumanSpymaster = isMultiplayerActive && (
+    localPlayer?.role === 'red_spymaster' || localPlayer?.role === 'blue_spymaster'
+  );
+  useEffect(() => {
+    setIsHumanSpymaster(isHumanSpymaster);
+  }, [isHumanSpymaster, setIsHumanSpymaster]);
+
   // 요원 클릭 권한 (팀장/관전자는 지목 불가)
   const isPlayerActionAllowed = !isSpymasterRole && phase === 'playing' && turn === 'player_turn' && guessesLeft > 0;
 
@@ -126,18 +136,30 @@ export const App: React.FC = () => {
   // 🤖 관전자 모드 및 AI 요원 자동 카드 추리/지목 루프 (1~2초 숙지 후 조준 및 순차 지목)
   const isSpectator = isMultiplayerActive && localPlayer?.role === 'spectator';
   const currentTeamOperativeRole = playerTeam === 'red' ? 'red_operative' : 'blue_operative';
-  const isOperativeAi = isMultiplayerActive
-    ? (isSpectator || !!players.find(p => p.role === currentTeamOperativeRole)?.isAi)
-    : false;
+  // 현장 요원 자리에 사람이 배정되어 있지 않거나 AI로 지정된 경우 -> AI 요원이 자동 진행!
+  const isCurrentOperativeHuman = isMultiplayerActive && players.some(
+    p => p.role === currentTeamOperativeRole && !p.isAi
+  );
+  const isOperativeAi = isMultiplayerActive ? !isCurrentOperativeHuman : false;
+
+  const aiTurnStepRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isOperativeAi || phase !== 'playing' || turn !== 'player_turn' || guessesLeft <= 0) {
+      aiTurnStepRef.current = null;
       setTargetingCardId(null);
       return;
     }
 
     const unrevealedCards = cards.filter(c => !c.revealed);
     if (unrevealedCards.length === 0) return;
+
+    // 현재 턴·남은 지목 횟수·힌트 단어 기반의 스텝 키로 중복 실행 및 리렌더링 리셋 방지
+    const stepKey = `${turn}_${guessesLeft}_${currentHint?.word || 'none'}`;
+    if (aiTurnStepRef.current === stepKey) {
+      return;
+    }
+    aiTurnStepRef.current = stepKey;
 
     let timer1: ReturnType<typeof setTimeout> | null = null;
     let timer2: ReturnType<typeof setTimeout> | null = null;
@@ -147,10 +169,11 @@ export const App: React.FC = () => {
 
     timer1 = setTimeout(() => {
       // 힌트 유도 타깃 카드가 남아있다면 1순위로 선정
+      const currentUnrevealed = cards.filter(c => !c.revealed);
       const targetWords = currentHint?.targetWords || [];
-      const matchingTargetCards = unrevealedCards.filter(c => targetWords.includes(c.word));
-      const myTeamCards = unrevealedCards.filter(c => c.type === playerTeam);
-      const civilianCards = unrevealedCards.filter(c => c.type === 'neutral');
+      const matchingTargetCards = currentUnrevealed.filter(c => targetWords.includes(c.word));
+      const myTeamCards = currentUnrevealed.filter(c => c.type === playerTeam);
+      const civilianCards = currentUnrevealed.filter(c => c.type === 'neutral');
 
       let chosenCard: CardItem | null = null;
       if (matchingTargetCards.length > 0) {
@@ -160,7 +183,7 @@ export const App: React.FC = () => {
       } else if (civilianCards.length > 0) {
         chosenCard = civilianCards[Math.floor(Math.random() * civilianCards.length)];
       } else {
-        chosenCard = unrevealedCards[0];
+        chosenCard = currentUnrevealed[0];
       }
 
       if (!chosenCard) return;
@@ -172,6 +195,7 @@ export const App: React.FC = () => {
       // 3단계: 1.5초 후 확정 지목 및 카드 뒤집기
       timer2 = setTimeout(() => {
         setTargetingCardId(null);
+        aiTurnStepRef.current = null;
         if (chosenCard) {
           handleSelectCard(chosenCard.id);
         }
@@ -179,9 +203,7 @@ export const App: React.FC = () => {
     }, 1800);
 
     return () => {
-      if (timer1) clearTimeout(timer1);
-      if (timer2) clearTimeout(timer2);
-      setTargetingCardId(null);
+      // 턴이나 조건이 바뀌었을 때만 정리
     };
   }, [isOperativeAi, phase, turn, guessesLeft, cards, playerTeam, currentHint, handleSelectCard, setTargetingCardId, setStatusMessage]);
 
@@ -193,8 +215,21 @@ export const App: React.FC = () => {
     }
   }, [passTurn, isMultiplayerActive, broadcastPassTurn]);
 
-  // 멀티플레이 호스트의 게임 시작
+  // 멀티플레이 호스트의 게임 시작 (공석인 자리는 자동으로 AI 플레이어로 채워서 시작)
   const handleHostStartGame = () => {
+    const standardRoles: { role: PlayerRole; name: string }[] = [
+      { role: 'red_spymaster', name: '알파 (RED 팀장)' },
+      { role: 'red_operative', name: '브라보 (RED 요원)' },
+      { role: 'blue_spymaster', name: '찰리 (BLUE 팀장)' },
+      { role: 'blue_operative', name: '델타 (BLUE 요원)' },
+    ];
+    standardRoles.forEach(({ role, name }) => {
+      const exists = players.some(p => p.role === role);
+      if (!exists) {
+        p2pManager.setAiPlayer(role, true, name);
+      }
+    });
+
     startGame(difficulty, playerTeam, gameMode);
     setTimeout(() => {
       broadcastStartGame(cards, gameMode, 'spymaster_thinking');
@@ -327,6 +362,7 @@ export const App: React.FC = () => {
             onSubmitHint={handleSubmitSpymasterHint}
             disabled={turn !== 'spymaster_thinking'}
             team={playerTeam}
+            onGetAiSuggestion={getAiSuggestedHint}
           />
         ) : (
           /* ⌨️ 4. 요원 하단 입력 컨트롤 (자동완성 칩 + 음성 인식 + 텍스트 타이핑 + 턴 패스) */

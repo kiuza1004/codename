@@ -1,6 +1,6 @@
-export const APP_VERSION = 'v2.2.2 QUICK PASS';
-export const APP_BUILD_DATE = '2026-11-26 01:00 KST';
-export const APP_CHANGELOG = '팀장 힌트창 우측 상단 퀵 턴 종료 버튼 배치 및 시선 동선 최적화';
+export const APP_VERSION = 'v2.3.0 SPYMASTER SYNC';
+export const APP_BUILD_DATE = '2026-11-26 21:35 KST';
+export const APP_CHANGELOG = '인간 팀장 직접 지령 입력 대기, 공석 자동 AI 채우기, AI 요원 안정적 추리·지목 루프 탑재';
 
 const CAREER_STORAGE_KEY = 'codenames_argon_career_v2';
 

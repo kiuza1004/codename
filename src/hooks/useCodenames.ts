@@ -11,7 +11,19 @@ import confetti from 'canvas-confetti';
 const RECENT_WORDS_KEY = 'codenames_recent_words';
 const RECENT_PICS_KEY = 'codenames_recent_pictures';
 
-export function useCodenames() {
+export interface UseCodenamesOptions {
+  isHumanSpymaster?: boolean;
+}
+
+export function useCodenames(options: UseCodenamesOptions = {}) {
+  const [isHumanSpymaster, setIsHumanSpymaster] = useState<boolean>(options.isHumanSpymaster || false);
+
+  useEffect(() => {
+    if (typeof options.isHumanSpymaster === 'boolean') {
+      setIsHumanSpymaster(options.isHumanSpymaster);
+    }
+  }, [options.isHumanSpymaster]);
+
   const [phase, setPhase] = useState<GamePhase>('setup');
   const [gameMode, setGameMode] = useState<GameMode>('word');
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
@@ -266,14 +278,18 @@ export function useCodenames() {
     }, 300);
   }, [playerTeam, difficulty]);
 
-  // 게임 시작 시 첫 번째 힌트 자동 생성
+  // 게임 시작 시 첫 번째 힌트 처리 (인간 팀장일 경우 직접 입력 대기, AI 팀장일 경우 자동 연산)
   const hasTriggeredFirstHint = useRef(false);
   useEffect(() => {
     if (phase === 'playing' && turn === 'spymaster_thinking' && !hasTriggeredFirstHint.current && cards.length > 0) {
       hasTriggeredFirstHint.current = true;
-      triggerSpymasterHint(cards, []);
+      if (isHumanSpymaster) {
+        setStatusMessage('팀장 작전 지령실: 암호 힌트와 목표 카드 수를 입력하고 [지령 전송]을 누르십시오.');
+      } else {
+        triggerSpymasterHint(cards, []);
+      }
     }
-  }, [phase, turn, cards, triggerSpymasterHint]);
+  }, [phase, turn, cards, triggerSpymasterHint, isHumanSpymaster]);
 
   // 상대팀(AI) 턴 시뮬레이션: 상대 팀장 힌트 제시 및 상대 요원의 답 맞추기 과정 순차 연출 (1~2초 숙지 및 조준 과정)
   const handleOpponentTurn = useCallback((updatedCards: CardItem[], currentHistory: Hint[]) => {
@@ -357,11 +373,19 @@ export function useCodenames() {
               return;
             }
 
-            setStatusMessage(`상대 팀의 작전이 완료되었습니다. 아군 팀장 AI가 다음 지령을 연산 중입니다...`);
-            setTimeout(() => {
-              setStats(prev => ({ ...prev, turnsTaken: prev.turnsTaken + 1 }));
-              triggerSpymasterHint(currentBoardCards, nextHistory);
-            }, 2000);
+            if (isHumanSpymaster) {
+              setStatusMessage(`상대 팀 작전 종료. 팀장님, 아군 요원에게 내릴 암호 지령을 입력하십시오.`);
+              setTimeout(() => {
+                setStats(prev => ({ ...prev, turnsTaken: prev.turnsTaken + 1 }));
+                setTurn('spymaster_thinking');
+              }, 1500);
+            } else {
+              setStatusMessage(`상대 팀의 작전이 완료되었습니다. 아군 팀장 AI가 다음 지령을 연산 중입니다...`);
+              setTimeout(() => {
+                setStats(prev => ({ ...prev, turnsTaken: prev.turnsTaken + 1 }));
+                triggerSpymasterHint(currentBoardCards, nextHistory);
+              }, 2000);
+            }
             return;
           }
 
@@ -402,7 +426,7 @@ export function useCodenames() {
 
       }, 2200);
     }, 1800);
-  }, [playerTeam, difficulty, triggerSpymasterHint, recordGameOutcome, stats.correctGuesses]);
+  }, [playerTeam, difficulty, triggerSpymasterHint, recordGameOutcome, stats.correctGuesses, isHumanSpymaster]);
 
   // 카드 선택 (지목) 처리
   const selectCard = useCallback((cardId: number) => {
@@ -596,6 +620,13 @@ export function useCodenames() {
     speech.speakHint(playerTeam === 'red' ? '레드' : '블루', hint.word, hint.count);
   }, [playerTeam]);
 
+  // 팀장을 위한 AI 추천 힌트 도출 헬퍼
+  const getAiSuggestedHint = useCallback((): Hint | null => {
+    if (cards.length === 0) return null;
+    const usedWords = hintHistory.map(h => h.word);
+    return generateSpymasterHint(cards, playerTeam, difficulty, usedWords);
+  }, [cards, playerTeam, difficulty, hintHistory]);
+
   // 새 게임 준비
   const resetToSetup = useCallback(() => {
     hasTriggeredFirstHint.current = false;
@@ -642,5 +673,8 @@ export function useCodenames() {
     resetToSetup,
     syncBoardState,
     applySpymasterHint,
+    getAiSuggestedHint,
+    isHumanSpymaster,
+    setIsHumanSpymaster,
   };
 }

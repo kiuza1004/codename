@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { Send, Hash, MessageSquare, AlertCircle } from 'lucide-react';
+import { Send, Hash, MessageSquare, AlertCircle, Sparkles } from 'lucide-react';
+import { Hint } from '../types/game';
 
 interface SpymasterInputBarProps {
   onSubmitHint: (word: string, count: number) => void;
   disabled: boolean;
   team: 'red' | 'blue';
+  onGetAiSuggestion?: () => Hint | null;
 }
 
 export const SpymasterInputBar: React.FC<SpymasterInputBarProps> = ({
   onSubmitHint,
   disabled,
   team,
+  onGetAiSuggestion,
 }) => {
   const [word, setWord] = useState('');
   const [count, setCount] = useState<number>(2);
@@ -50,6 +53,26 @@ export const SpymasterInputBar: React.FC<SpymasterInputBarProps> = ({
           }`}>
             {isRed ? 'RED 팀장 지령실' : 'BLUE 팀장 지령실'}
           </span>
+
+          {onGetAiSuggestion && (
+            <button
+              type="button"
+              onClick={() => {
+                const suggested = onGetAiSuggestion();
+                if (suggested) {
+                  setWord(suggested.word);
+                  setCount(suggested.count);
+                  setError(null);
+                }
+              }}
+              disabled={disabled}
+              title="AI가 분석한 최적의 시맨틱 힌트를 자동으로 채웁니다"
+              className="px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 hover:text-white border border-cyan-500/50 text-[11px] font-mono font-bold flex items-center gap-1 transition-all disabled:opacity-40 shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>AI 추천 힌트</span>
+            </button>
+          )}
         </div>
 
         {/* 단어 입력 */}
