@@ -1,6 +1,6 @@
-export const APP_VERSION = 'v2.4.1 COMPACT FIT';
-export const APP_BUILD_DATE = '2026-11-26 22:20 KST';
-export const APP_CHANGELOG = '팀장 힌트창 3줄 슬림화, 카드 그리드 높이 축소 및 한 화면(No-scroll) 통합 피팅';
+export const APP_VERSION = 'v2.4.2 CARD FIT';
+export const APP_BUILD_DATE = '2026-11-26 22:48 KST';
+export const APP_CHANGELOG = '카드 높이 10% 확장 및 공개 카드 CLEAR 스탬프 카드 내부 정렬 완벽 피팅';
 
 const CAREER_STORAGE_KEY = 'codenames_argon_career_v2';
 

@@ -129,7 +129,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
             <div
               key={card.id}
               className={`perspective-1000 select-none transition-all duration-300 ${
-                isLargeZoom ? 'h-18 sm:h-22 md:h-26 lg:h-28' : 'h-11 sm:h-14 md:h-16 lg:h-18'
+                isLargeZoom ? 'h-20 sm:h-24 md:h-28 lg:h-32' : 'h-12 sm:h-16 md:h-18 lg:h-20'
               } ${isTargeting ? 'scale-[1.03] z-20' : ''}`}
               onMouseEnter={() => {
                 if (isClickable) sound.playHover();
@@ -191,7 +191,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                     <div className="flex-1 w-full flex flex-col items-center justify-center p-0.5 overflow-hidden relative">
                       <div
                         className={`${
-                          isLargeZoom ? 'w-8 h-8 sm:w-12 sm:h-12' : 'w-5 h-5 sm:w-8 sm:h-8 md:w-9 md:h-9'
+                          isLargeZoom ? 'w-9 h-9 sm:w-13 sm:h-13' : 'w-6 h-6 sm:w-9 sm:h-9 md:w-10 md:h-10'
                         } text-slate-200 group-hover:text-cyan-300 transition-colors drop-shadow`}
                         dangerouslySetInnerHTML={{ __html: card.svgIcon }}
                       />
@@ -248,9 +248,9 @@ export const CardGrid: React.FC<CardGridProps> = ({
                   <div className="absolute inset-0 rounded-lg sm:rounded-xl border border-cyan-400/0 group-hover:border-cyan-400/40 pointer-events-none transition-all"></div>
                 </div>
 
-                {/* 뒷면 (공개 상태: 정체 공개) */}
+                {/* 뒷면 (공개 상태: 정체 공개 - 카드 밖 밀림 방지 및 완벽 내부 피팅) */}
                 <div
-                  className={`absolute inset-0 backface-hidden rotate-y-180 rounded-lg sm:rounded-xl p-1 sm:p-1.5 flex flex-col justify-between items-center shadow-md border ${
+                  className={`absolute inset-0 backface-hidden rotate-y-180 rounded-lg sm:rounded-xl p-1 sm:p-1.5 flex flex-col justify-between items-center shadow-md border overflow-hidden ${
                     card.type === 'red'
                       ? 'bg-gradient-to-br from-red-600 to-red-800 border-red-400 text-white shadow-red-900/50'
                       : card.type === 'blue'
@@ -261,7 +261,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                   }`}
                 >
                   {/* 상단 레이블 */}
-                  <div className="w-full flex justify-between items-center text-[6px] sm:text-[8px] font-mono uppercase tracking-wider font-bold opacity-85 leading-none">
+                  <div className="w-full flex justify-between items-center text-[6px] sm:text-[8px] font-mono uppercase tracking-wider font-bold opacity-85 leading-none shrink-0">
                     <span className="truncate">
                       {card.type === 'red' && 'RED'}
                       {card.type === 'blue' && 'BLUE'}
@@ -271,22 +271,20 @@ export const CardGrid: React.FC<CardGridProps> = ({
                     <span>#{card.id + 1}</span>
                   </div>
 
-                  {/* 중앙 아이콘 & 단어 */}
-                  <div className="flex flex-col items-center justify-center gap-0.5">
-                    {card.type === 'red' && <ShieldAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-200 animate-pulse" />}
-                    {card.type === 'blue' && <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-200 animate-pulse" />}
-                    {card.type === 'neutral' && <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-800" />}
-                    {card.type === 'assassin' && <Skull className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 animate-bounce" />}
+                  {/* 중앙 아이콘 & 단어 (가변 flex로 밀림 방지) */}
+                  <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center gap-0.5 overflow-hidden my-auto">
+                    {card.type === 'red' && <ShieldAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-200 animate-pulse shrink-0" />}
+                    {card.type === 'blue' && <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-200 animate-pulse shrink-0" />}
+                    {card.type === 'neutral' && <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-800 shrink-0" />}
+                    {card.type === 'assassin' && <Skull className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 animate-bounce shrink-0" />}
 
-                    <span className={`${getCardFontSize(card.word, isLargeZoom)} font-black tracking-tight break-keep text-center leading-tight max-w-full px-0.5 ${
-                      card.type === 'neutral' ? 'text-amber-950' : card.type === 'assassin' ? 'text-red-400' : 'text-white'
-                    }`}>
+                    <span className={`${getCardFontSize(card.word, isLargeZoom)} font-black tracking-tight break-keep text-center leading-tight max-w-full px-0.5`}>
                       {card.word}
                     </span>
                   </div>
 
-                  {/* 하단 스탬프 */}
-                  <div className={`text-[6px] sm:text-[7px] font-mono tracking-wider uppercase font-bold px-1 py-0.2 rounded-full border leading-none ${
+                  {/* 하단 스탬프 (shrink-0 및 안전 패딩으로 카드 내부 하단에 정렬) */}
+                  <div className={`shrink-0 text-[6px] sm:text-[8px] font-mono tracking-wider uppercase font-bold px-1.5 py-0.5 rounded-full border leading-none ${
                     card.type === 'neutral'
                       ? 'border-amber-400/60 bg-amber-200/50 text-amber-900'
                       : card.type === 'assassin'
