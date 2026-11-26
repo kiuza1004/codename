@@ -66,22 +66,22 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#111726]/95 backdrop-blur-md border border-slate-800 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-xl">
+    <div className="w-full bg-[#111726]/95 backdrop-blur-md border border-slate-800 rounded-xl p-1.5 sm:p-2.5 shadow-md">
       {/* 🎯 Argon 스마트 자동완성 칩 또는 내가 마킹한 후보 빠른 지목 바 */}
       {!disabled && (matchingSuggestions.length > 0 || markedCards.length > 0) && (
-        <div className="mb-2.5 pb-2 border-b border-slate-800/80 flex items-center gap-1.5 flex-wrap animate-fadeIn">
+        <div className="mb-1.5 pb-1 border-b border-slate-800/80 flex items-center gap-1 flex-wrap animate-fadeIn">
           {matchingSuggestions.length > 0 ? (
             <>
-              <span className="text-[11px] font-mono text-cyan-400 flex items-center gap-1 mr-1">
-                <Sparkles className="w-3 h-3" />
-                <span>빠른 지목:</span>
+              <span className="text-[10px] font-mono text-cyan-400 flex items-center gap-0.5 mr-0.5">
+                <Sparkles className="w-2.5 h-2.5" />
+                <span>빠른지목:</span>
               </span>
               {matchingSuggestions.map(c => (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => handleQuickSelect(c.word)}
-                  className="px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-600 text-cyan-200 hover:text-white border border-cyan-500/40 text-xs font-bold transition-all shadow-sm"
+                  className="px-2 py-0.5 rounded-md bg-cyan-950/80 hover:bg-cyan-600 text-cyan-200 hover:text-white border border-cyan-500/40 text-[11px] font-bold transition-all shadow-sm"
                 >
                   {c.word}
                 </button>
@@ -90,16 +90,16 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
           ) : (
             markedCards.length > 0 && (
               <>
-                <span className="text-[11px] font-mono text-amber-400 flex items-center gap-1 mr-1">
-                  <Pin className="w-3 h-3" />
-                  <span>마킹한 후보 즉시 지목:</span>
+                <span className="text-[10px] font-mono text-amber-400 flex items-center gap-0.5 mr-0.5">
+                  <Pin className="w-2.5 h-2.5" />
+                  <span>마킹후보:</span>
                 </span>
                 {markedCards.map(c => (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => handleQuickSelect(c.word)}
-                    className="px-2.5 py-1 rounded-lg bg-amber-950/70 hover:bg-amber-600 text-amber-200 hover:text-white border border-amber-500/40 text-xs font-bold transition-all shadow-sm"
+                    className="px-2 py-0.5 rounded-md bg-amber-950/70 hover:bg-amber-600 text-amber-200 hover:text-white border border-amber-500/40 text-[11px] font-bold transition-all shadow-sm"
                   >
                     ★ {c.word}
                   </button>
@@ -110,14 +110,14 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-1.5 sm:gap-2">
         {/* 음성 인식 버튼 (STT) */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={onToggleVoice}
             disabled={disabled}
-            className={`w-full sm:w-auto relative flex items-center justify-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all border shadow-md whitespace-nowrap ${
+            className={`w-full sm:w-auto relative flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-bold text-xs transition-all border shadow-sm whitespace-nowrap ${
               isListening
                 ? 'bg-red-500/20 border-red-500 text-red-400 animate-pulse shadow-red-500/30'
                 : 'bg-gradient-to-r from-cyan-600 to-blue-600 border-cyan-400/40 text-white hover:brightness-110 shadow-cyan-600/20'
@@ -125,35 +125,35 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
           >
             {isListening ? (
               <>
-                <MicOff className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 animate-bounce" />
-                <span>듣고 있습니다... (말씀하세요)</span>
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                <MicOff className="w-3.5 h-3.5 text-red-400 animate-bounce" />
+                <span>듣는 중...</span>
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
               </>
             ) : (
               <>
-                <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>말로 지목하기 (음성)</span>
+                <Mic className="w-3.5 h-3.5" />
+                <span>음성 지목</span>
               </>
             )}
           </button>
         </div>
 
         {/* 텍스트 입력창 (타이핑) */}
-        <form onSubmit={handleSubmit} className="flex-1 flex items-center gap-2">
+        <form onSubmit={handleSubmit} className="flex-1 flex items-center gap-1.5">
           <div className="relative flex-1">
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               disabled={disabled}
-              placeholder={disabled ? '상대방 턴 또는 팀장 분석 중...' : '단어 입력 시 자동완성 칩이 표시됩니다'}
-              className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium"
+              placeholder={disabled ? '상대방 턴 또는 팀장 분석 중...' : '단어 입력 시 자동완성'}
+              className="w-full bg-slate-950/80 border border-slate-700/80 rounded-lg px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-medium"
             />
             {inputText && (
               <button
                 type="button"
                 onClick={() => setInputText('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-[11px] px-1.5 py-0.5 rounded bg-slate-800"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-[10px] px-1 py-0.2 rounded bg-slate-800"
               >
                 지우기
               </button>
@@ -163,9 +163,9 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
           <button
             type="submit"
             disabled={disabled || !inputText.trim()}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-cyan-600 text-slate-200 hover:text-white font-bold text-xs sm:text-sm border border-slate-700 hover:border-cyan-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md whitespace-nowrap"
+            className="flex items-center gap-1 px-3 py-1 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-cyan-600 text-slate-200 hover:text-white font-bold text-xs border border-slate-700 hover:border-cyan-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm whitespace-nowrap"
           >
-            <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Send className="w-3 h-3" />
             <span>지목</span>
           </button>
         </form>
@@ -176,17 +176,17 @@ export const ActionControls: React.FC<ActionControlsProps> = ({
           onClick={onPassTurn}
           disabled={disabled}
           title="남은 지목 기회를 종료하고 상대방 턴으로 넘깁니다"
-          className="flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-300 font-semibold text-xs sm:text-sm border border-slate-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+          className="flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-300 font-semibold text-xs border border-slate-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
         >
-          <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+          <SkipForward className="w-3 h-3 text-amber-400" />
           <span>턴 종료</span>
         </button>
       </div>
 
       {/* 피드백 및 오류 메시지 */}
       {(feedback || voiceError) && (
-        <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center gap-2 text-xs text-amber-400 animate-fadeIn">
-          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+        <div className="mt-1 pt-1 border-t border-slate-800/60 flex items-center gap-1.5 text-xs text-amber-400 animate-fadeIn">
+          <AlertCircle className="w-3 h-3 flex-shrink-0" />
           <span>{feedback || voiceError}</span>
         </div>
       )}

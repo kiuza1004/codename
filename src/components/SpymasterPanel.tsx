@@ -9,6 +9,7 @@ interface SpymasterPanelProps {
   playerTeam: TeamColor;
   statusMessage: string;
   combo?: number;
+  guessesLeft?: number;
   onPassTurn?: () => void;
   canPassTurn?: boolean;
 }
@@ -20,6 +21,7 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
   playerTeam,
   statusMessage,
   combo = 0,
+  guessesLeft = 0,
   onPassTurn,
   canPassTurn = false,
 }) => {
@@ -31,158 +33,146 @@ export const SpymasterPanel: React.FC<SpymasterPanelProps> = ({
 
   const activeTeam: TeamColor = isOpponentTurn ? (playerTeam === 'red' ? 'blue' : 'red') : playerTeam;
   const teamLabel = isOpponentTurn
-    ? (playerTeam === 'red' ? '상대팀 블루(BLUE)' : '상대팀 레드(RED)')
-    : (playerTeam === 'red' ? '아군 레드(RED)' : '아군 블루(BLUE)');
+    ? (playerTeam === 'red' ? '상대 블루' : '상대 레드')
+    : (playerTeam === 'red' ? '아군 레드' : '아군 블루');
 
   return (
-    <div className="w-full flex flex-col gap-2 my-1">
-      {/* 2번 화면 - ① [맨 위] 이전 힌트 기록 패널 */}
-      <div className="w-full rounded-2xl border border-slate-700/70 bg-[#121725]/95 backdrop-blur-md p-2.5 sm:p-3.5 shadow-md">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center">
-              <History className="w-3.5 h-3.5 text-cyan-400" />
+    <div className={`w-full rounded-xl border px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-sm transition-all my-0.5 ${
+      isOpponentTurn
+        ? (activeTeam === 'red' ? 'bg-[#1a0f14]/95 border-red-500/50' : 'bg-[#0f1422]/95 border-blue-500/50')
+        : 'bg-[#121725]/95 border-slate-700/70'
+    }`}>
+      {/* 🔹 1줄: 상단 메타 바 (팀 정보, 이전기록 토글, 턴 종료 버튼) */}
+      <div className="flex items-center justify-between gap-1.5 pb-1 border-b border-slate-800/80">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="relative shrink-0">
+            <div className={`w-5 h-5 rounded-lg flex items-center justify-center border shadow-inner ${
+              activeTeam === 'red' ? 'bg-red-950/70 border-red-500/60 text-red-400' : 'bg-blue-950/70 border-blue-500/60 text-blue-400'
+            }`}>
+              <Bot className="w-3 h-3 animate-pulse" />
             </div>
-            <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">
-              이전 힌트 기록
-            </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-cyan-300 border border-slate-700 font-bold">
-              {hintHistory.length}건
-            </span>
+            <span className={`absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full border border-slate-950 ${
+              isPlayerTurn ? 'bg-emerald-500 animate-ping' : isOpponentTurn ? 'bg-amber-500 animate-pulse' : 'bg-cyan-500'
+            }`}></span>
           </div>
 
-          {hintHistory.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/60 text-xs text-cyan-300 hover:text-white border border-cyan-500/40 transition-all font-mono font-bold shadow-sm"
-            >
-              <span>{showHistory ? '기록 접기' : '기록 열람'}</span>
-              {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
-          ) : (
-            <span className="text-[10px] text-slate-500 font-mono">기록 없음 (작전 개시 턴)</span>
+          <span className="text-[11px] font-mono font-black text-slate-200">
+            {isOpponentTurn ? '상대 팀장 힌트' : '팀장 힌트'}
+          </span>
+          <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full uppercase font-bold border ${
+            activeTeam === 'red' ? 'bg-red-950/80 border-red-500/40 text-red-300' : 'bg-blue-950/80 border-blue-500/40 text-blue-300'
+          }`}>
+            {teamLabel}
+          </span>
+
+          {combo >= 2 && (
+            <span className="flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[9px] font-mono font-black animate-bounce">
+              <Flame className="w-2.5 h-2.5 text-amber-400" />
+              <span>{combo}연속!</span>
+            </span>
           )}
         </div>
 
-        {/* 힌트 히스토리 드롭다운 */}
-        {showHistory && hintHistory.length > 0 && (
-          <div className="mt-2.5 pt-2.5 border-t border-slate-800 animate-fadeIn">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-              {hintHistory.map((h, i) => (
-                <div key={i} className="bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center justify-between text-xs">
-                  <span className="text-slate-400 font-mono text-[11px]">#{i + 1}턴</span>
-                  <span className="font-bold text-cyan-300">"{h.word}"</span>
-                  <div className="flex items-center gap-1.5">
-                    {h.confidence && (
-                      <span className="text-[9px] font-mono text-emerald-400 hidden sm:inline">
-                        {h.confidence}%
-                      </span>
-                    )}
-                    <span className="font-mono text-amber-300 font-bold bg-amber-950/50 px-2 py-0.5 rounded border border-amber-500/40 text-[11px]">
-                      {h.count}장
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* 우측 컨트롤: 이전 기록 토글 + 턴 종료 버튼 */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {hintHistory.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-900 hover:bg-slate-800 text-[10px] text-slate-300 hover:text-cyan-300 border border-slate-700 transition-all font-mono"
+            >
+              <History className="w-3 h-3 text-cyan-400" />
+              <span>기록 {hintHistory.length}건</span>
+              {showHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+          )}
+
+          {onPassTurn && (
+            <button
+              type="button"
+              onClick={onPassTurn}
+              disabled={!canPassTurn}
+              title={canPassTurn ? '남은 지목 기회를 마치고 상대 턴으로 넘깁니다' : '현재는 턴을 넘길 수 없습니다'}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-md font-bold font-mono text-[10px] sm:text-[11px] border transition-all shadow-sm ${
+                canPassTurn
+                  ? 'bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 border-amber-400 text-white shadow-amber-900/50 cursor-pointer active:scale-95 animate-pulse'
+                  : 'bg-slate-900/60 text-slate-500 border-slate-800 cursor-not-allowed opacity-40'
+              }`}
+            >
+              <SkipForward className={`w-3 h-3 ${canPassTurn ? 'text-amber-200' : 'text-slate-500'}`} />
+              <span>턴 종료</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 🔹 2줄: 핵심 힌트 바 (암호 단어 + 목표 수량 + 남은 기회 바로 노출) */}
+      <div className="flex items-center justify-between gap-2 py-0.5 flex-wrap">
+        {currentHint ? (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs sm:text-base font-black font-spy tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-white px-2 py-0.5 rounded-md bg-cyan-950/80 border border-cyan-400/50 shadow-sm">
+              "{currentHint.word}"
+            </span>
+            <span className="text-[11px] sm:text-xs font-black font-mono text-amber-300 px-1.5 py-0.5 rounded-md bg-amber-950/80 border border-amber-500/50 shadow-sm">
+              {currentHint.count}장 목표
+            </span>
+            {guessesLeft > 0 && isPlayerTurn && (
+              <span className="text-[10px] sm:text-[11px] font-bold font-mono text-emerald-300 px-1.5 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-500/50">
+                기회 {guessesLeft}회
+              </span>
+            )}
           </div>
+        ) : (
+          <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5 py-0.5">
+            <Radio className="w-3 h-3 text-cyan-400 animate-spin" />
+            <span>팀장 암호 지령을 연산 중입니다...</span>
+          </div>
+        )}
+
+        <span className="hidden sm:inline-flex items-center gap-1 text-[8px] font-mono text-cyan-400/80 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-500/20">
+          <ShieldCheck className="w-2.5 h-2.5" />
+          ARGON NEURAL ENGINE
+        </span>
+      </div>
+
+      {/* 🔹 3줄: 실시간 상태 및 AI 요원 추리 브리핑 라인 */}
+      <div className="text-[10px] sm:text-[11px] text-slate-300 font-medium flex items-center gap-1 pt-0.5 truncate border-t border-slate-800/60">
+        {isThinking && (
+          <span className="text-cyan-400 flex items-center gap-1 truncate">
+            <Radio className="w-3 h-3 animate-spin shrink-0" />
+            <span className="truncate">팀장이 키카드를 분석하여 최적의 암호단어를 도출하고 있습니다...</span>
+          </span>
+        )}
+        {isOpponentTurn && (
+          <span className="text-amber-400 flex items-center gap-1 truncate">
+            <Radio className="w-3 h-3 animate-pulse shrink-0" />
+            <span className="truncate">{statusMessage}</span>
+          </span>
+        )}
+        {isPlayerTurn && (
+          <span className="text-emerald-400 flex items-center gap-1 truncate">
+            <Target className="w-3 h-3 shrink-0" />
+            <span className="truncate font-mono">{statusMessage}</span>
+          </span>
         )}
       </div>
 
-      {/* 2번 화면 - ② [바로 아래] 팀장 힌트 패널 (카드 바로 위에 위치) */}
-      <div className={`w-full rounded-2xl border p-2.5 sm:p-3.5 shadow-md transition-all ${
-        isOpponentTurn
-          ? (activeTeam === 'red' ? 'bg-[#1a0f14]/95 border-red-500/50' : 'bg-[#0f1422]/95 border-blue-500/50')
-          : 'bg-[#121725]/95 border-slate-700/70'
-      }`}>
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap flex-1">
-            <div className="relative shrink-0">
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border shadow-inner ${
-                activeTeam === 'red' ? 'bg-red-950/70 border-red-500/60 text-red-400' : 'bg-blue-950/70 border-blue-500/60 text-blue-400'
-              }`}>
-                <Bot className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
-              </div>
-              <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-950 ${
-                isPlayerTurn ? 'bg-emerald-500 animate-ping' : isOpponentTurn ? 'bg-amber-500 animate-pulse' : 'bg-cyan-500'
-              }`}></span>
-            </div>
-
-            <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
-              {/* 상단: 팀장 라벨 및 팀 정보 */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-mono font-bold tracking-wider text-slate-200">
-                  {isOpponentTurn ? '상대 팀장 힌트' : '팀장 힌트'}
-                </span>
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-bold border ${
-                  activeTeam === 'red' ? 'bg-red-950/80 border-red-500/40 text-red-300' : 'bg-blue-950/80 border-blue-500/40 text-blue-300'
-                }`}>
-                  {teamLabel}
-                </span>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono text-cyan-400 bg-cyan-950/50 px-2 py-0.5 rounded-full border border-cyan-500/30">
-                  <ShieldCheck className="w-3 h-3" />
-                  ARGON AI ENGINE
+      {/* 이전 힌트 기록 드롭다운 (펼칠 때만 컴팩트하게 노출) */}
+      {showHistory && hintHistory.length > 0 && (
+        <div className="mt-1 pt-1 border-t border-slate-800 animate-fadeIn max-h-24 overflow-y-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
+            {hintHistory.map((h, i) => (
+              <div key={i} className="bg-slate-900/90 border border-slate-800 px-1.5 py-0.5 rounded flex items-center justify-between text-[9px]">
+                <span className="text-slate-400 font-mono">#{i + 1}턴</span>
+                <span className="font-bold text-cyan-300 truncate mx-1">"{h.word}"</span>
+                <span className="font-mono text-amber-300 font-bold bg-amber-950/50 px-1 rounded border border-amber-500/40">
+                  {h.count}장
                 </span>
               </div>
-
-              {/* 하단: 핵심 팀장 힌트 내용 (단어 + 수량) 바로 노출 */}
-              {currentHint ? (
-                <div className="flex items-center gap-2 sm:gap-3 flex-wrap mt-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base sm:text-2xl font-black font-spy tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-white px-2.5 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-400/50 shadow-sm">
-                      "{currentHint.word}"
-                    </span>
-                    <span className="text-sm sm:text-lg font-black font-mono text-amber-300 px-2 py-0.5 rounded-lg bg-amber-950/80 border border-amber-500/50 shadow-sm">
-                      {currentHint.count}장
-                    </span>
-                  </div>
-
-                  {/* 상태 메시지 */}
-                  <div className="text-xs text-slate-300 font-medium flex items-center gap-1.5">
-                    {isThinking && <span className="text-cyan-400 flex items-center gap-1"><Radio className="w-3.5 h-3.5 animate-spin" /> 팀장 AI가 새 암호단어를 연산 중...</span>}
-                    {isOpponentTurn && <span className="text-amber-400 flex items-center gap-1"><Radio className="w-3.5 h-3.5 animate-pulse" /> {statusMessage}</span>}
-                    {isPlayerTurn && <span className="text-emerald-400 flex items-center gap-1"><Target className="w-3.5 h-3.5 shrink-0" /> <span>{statusMessage}</span></span>}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
-                  <Radio className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-                  <span>팀장 힌트를 생성 중입니다...</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 우측 상단: [턴 종료] 직관 버튼 & 연속 정답 콤보 배지 */}
-          <div className="flex items-center gap-2 shrink-0">
-            {onPassTurn && (
-              <button
-                type="button"
-                onClick={onPassTurn}
-                disabled={!canPassTurn}
-                title={canPassTurn ? '남은 지목 기회를 마치고 상대 턴으로 넘깁니다' : '현재는 턴을 넘길 수 없습니다'}
-                className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-bold font-mono text-xs sm:text-sm border transition-all shadow-md ${
-                  canPassTurn
-                    ? 'bg-gradient-to-r from-amber-600/90 to-amber-700/90 hover:from-amber-500 hover:to-amber-600 border-amber-400 text-white shadow-amber-900/50 cursor-pointer active:scale-95 animate-pulse'
-                    : 'bg-slate-900/60 text-slate-500 border-slate-800 cursor-not-allowed opacity-45'
-                }`}
-              >
-                <SkipForward className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${canPassTurn ? 'text-amber-200' : 'text-slate-500'}`} />
-                <span>턴 종료</span>
-              </button>
-            )}
-
-            {/* 연속 정답 콤보 배지 (2콤보 이상 시 활성화) */}
-            {combo >= 2 && (
-              <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 to-red-500/20 border border-amber-500/50 text-amber-300 text-xs font-mono font-black animate-bounce shrink-0">
-                <Flame className="w-3.5 h-3.5 text-amber-400" />
-                <span>{combo} COMBO!</span>
-              </div>
-            )}
+            ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

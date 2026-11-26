@@ -41,17 +41,17 @@ export const SpymasterInputBar: React.FC<SpymasterInputBarProps> = ({
   const isRed = team === 'red';
 
   return (
-    <div className={`w-full rounded-2xl border p-3 shadow-lg transition-all ${
+    <div className={`w-full rounded-xl border px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-md transition-all ${
       isRed
         ? 'bg-red-950/70 border-red-500/60 shadow-red-950/40'
         : 'bg-blue-950/70 border-blue-500/60 shadow-blue-950/40'
     }`}>
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-2.5">
-        <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-xs font-mono font-black uppercase px-2.5 py-1 rounded-lg border ${
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className={`text-[11px] font-mono font-black uppercase px-2 py-0.5 rounded-md border ${
             isRed ? 'bg-red-900 border-red-400 text-white' : 'bg-blue-900 border-blue-400 text-white'
           }`}>
-            {isRed ? 'RED 팀장 지령실' : 'BLUE 팀장 지령실'}
+            {isRed ? 'RED 팀장 지령' : 'BLUE 팀장 지령'}
           </span>
 
           {onGetAiSuggestion && (
@@ -67,17 +67,17 @@ export const SpymasterInputBar: React.FC<SpymasterInputBarProps> = ({
               }}
               disabled={disabled}
               title="AI가 분석한 최적의 시맨틱 힌트를 자동으로 채웁니다"
-              className="px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 hover:text-white border border-cyan-500/50 text-[11px] font-mono font-bold flex items-center gap-1 transition-all disabled:opacity-40 shadow-sm"
+              className="px-2 py-0.5 rounded-md bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 hover:text-white border border-cyan-500/50 text-[10px] font-mono font-bold flex items-center gap-1 transition-all disabled:opacity-40 shadow-sm"
             >
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-              <span>AI 추천 힌트</span>
+              <Sparkles className="w-3 h-3 text-cyan-400" />
+              <span>AI 추천</span>
             </button>
           )}
         </div>
 
         {/* 단어 입력 */}
         <div className="relative flex-1 w-full">
-          <MessageSquare className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <MessageSquare className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={word}
@@ -86,22 +86,22 @@ export const SpymasterInputBar: React.FC<SpymasterInputBarProps> = ({
               if (error) setError(null);
             }}
             disabled={disabled}
-            placeholder={disabled ? '아군 팀장 턴을 기다리는 중...' : '암호 단어 입력 (예: 우주, 바다)'}
+            placeholder={disabled ? '아군 팀장 턴 대기 중...' : '암호 단어 입력 (예: 우주)'}
             maxLength={15}
-            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950/90 border border-slate-700 text-white font-spy text-sm focus:border-cyan-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full pl-8 pr-2.5 py-1 sm:py-1.5 rounded-lg bg-slate-950/90 border border-slate-700 text-white font-spy text-xs focus:border-cyan-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
 
         {/* 수량 선택 (1~9장) */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <div className="flex items-center bg-slate-950/90 border border-slate-700 rounded-xl px-2.5 py-1.5">
-            <Hash className="w-3.5 h-3.5 text-amber-400 mr-1" />
-            <span className="text-xs font-mono text-slate-400 mr-2">목표:</span>
+          <div className="flex items-center bg-slate-950/90 border border-slate-700 rounded-lg px-2 py-0.5">
+            <Hash className="w-3 h-3 text-amber-400 mr-1" />
+            <span className="text-[11px] font-mono text-slate-400 mr-1.5">목표:</span>
             <select
               value={count}
               onChange={(e) => setCount(Number(e.target.value))}
               disabled={disabled}
-              className="bg-transparent text-amber-300 font-mono font-bold text-sm focus:outline-none cursor-pointer disabled:opacity-50"
+              className="bg-transparent text-amber-300 font-mono font-bold text-xs focus:outline-none cursor-pointer disabled:opacity-50"
             >
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
                 <option key={n} value={n} className="bg-slate-900 text-white">
@@ -115,21 +115,21 @@ export const SpymasterInputBar: React.FC<SpymasterInputBarProps> = ({
           <button
             type="submit"
             disabled={disabled || !word.trim()}
-            className={`px-4 py-2 rounded-xl text-white font-bold font-mono text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
+            className={`px-3 py-1 sm:py-1.5 rounded-lg text-white font-bold font-mono text-xs flex items-center gap-1 shadow-sm transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
               isRed
                 ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:brightness-110 shadow-red-950/50'
                 : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:brightness-110 shadow-blue-950/50'
             }`}
           >
-            <Send className="w-4 h-4" />
-            <span>암호 힌트 전송</span>
+            <Send className="w-3.5 h-3.5" />
+            <span>지령 전송</span>
           </button>
         </div>
       </form>
 
       {error && (
-        <div className="flex items-center gap-1.5 text-xs text-rose-400 mt-2 font-mono">
-          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+        <div className="flex items-center gap-1 text-[11px] text-rose-400 mt-1 font-mono">
+          <AlertCircle className="w-3 h-3 shrink-0" />
           <span>{error}</span>
         </div>
       )}

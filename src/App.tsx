@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useCodenames } from './hooks/useCodenames';
 import { useMultiplayerGame } from './hooks/useMultiplayerGame';
 import { Header } from './components/Header';
-import { SecretHintBanner } from './components/SecretHintBanner';
 import { SpymasterPanel } from './components/SpymasterPanel';
 import { CardGrid } from './components/CardGrid';
 import { ActionControls } from './components/ActionControls';
@@ -333,18 +332,9 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 메인 작전 구역 (엄격한 3단 상하 레이아웃 유지) */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-2 sm:py-4 flex flex-col justify-between gap-2.5 sm:gap-3.5">
-        {/* 🎯 1. [암호힌트] 팀장힌트 위로 배치 (선택 시에만 노출) */}
-        <SecretHintBanner
-          currentHint={currentHint}
-          guessesLeft={guessesLeft}
-          playerTeam={playerTeam}
-          isPictureMode={cards.length > 0 && cards[0].mode === 'picture'}
-          disabled={!isPlayerActionAllowed}
-        />
-
-        {/* 🤖 2. [2번 패널] 맨 위: 이전 힌트 기록 / 바로 아래: 팀장 힌트 본부 (카드 바로 위) */}
+      {/* 메인 작전 구역 (상단 힌트 - 중앙 카드 - 하단 지목 한 화면 정렬) */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-2 sm:px-3 py-1 sm:py-2 flex flex-col justify-start gap-1 sm:gap-1.5">
+        {/* 🤖 [팀장 힌트 본부] 3줄 컴팩트 (암호단어, 목표수량, 남은기회, 턴종료, AI브리핑) */}
         <SpymasterPanel
           currentHint={currentHint}
           hintHistory={hintHistory}
@@ -352,11 +342,12 @@ export const App: React.FC = () => {
           playerTeam={playerTeam}
           statusMessage={statusMessage}
           combo={combo}
+          guessesLeft={guessesLeft}
           onPassTurn={handlePassTurn}
           canPassTurn={isPlayerActionAllowed}
         />
 
-        {/* 🃏 3. [카드판] 팀장힌트 바로 아래 위치 (팀장일 경우 키카드 투시 뷰 활성화) */}
+        {/* 🃏 [카드판] 팀장힌트 바로 아래 위치 (5열 정밀 슬림 피팅) */}
         <CardGrid
           cards={cards}
           onSelectCard={handleSelectCard}
@@ -376,7 +367,7 @@ export const App: React.FC = () => {
             onGetAiSuggestion={getAiSuggestedHint}
           />
         ) : (
-          /* ⌨️ 4. 요원 하단 입력 컨트롤 (자동완성 칩 + 음성 인식 + 텍스트 타이핑 + 턴 패스) */
+          /* ⌨️ 요원 하단 입력 컨트롤 (자동완성 칩 + 음성 인식 + 텍스트 타이핑 + 턴 패스) */
           <ActionControls
             cards={cards}
             onSelectByWord={selectCardByWord}
@@ -390,8 +381,8 @@ export const App: React.FC = () => {
       </main>
 
       {/* 푸터: 크레딧 및 PWA 안내 가이드라인 */}
-      <footer className="w-full bg-[#080a0f] border-t border-slate-900 py-3 px-4 text-center text-xs text-slate-500 font-mono">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <footer className="w-full bg-[#080a0f] border-t border-slate-900 py-1 sm:py-1.5 px-3 text-center text-[10px] sm:text-xs text-slate-500 font-mono">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-2">
           <span>CODENAMES : SPYMASTER AI & MULTIPLAYER <strong className="text-emerald-400">{APP_VERSION}</strong></span>
           <span className="text-amber-500/80">
             ※ PWA 안내: 캐시가 꼬일 수 있으니 꼭 기존 앱을 완전히 삭제하고 설치하셔야 합니다.

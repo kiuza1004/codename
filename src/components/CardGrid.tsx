@@ -13,19 +13,19 @@ interface CardGridProps {
   targetingCardId?: number | null;
 }
 
-// 🔤 글자 길이에 따른 최적화 폰트 크기 계산 (긴 단어 잘림 방지)
+// 🔤 글자 길이에 따른 최적화 폰트 크기 계산 (긴 단어 잘림 방지 및 세로 공간 최적화)
 const getCardFontSize = (word: string, isLarge: boolean) => {
   const len = word.length;
   if (isLarge) {
-    if (len <= 2) return 'text-base sm:text-2xl md:text-3xl';
-    if (len === 3) return 'text-sm sm:text-xl md:text-2xl';
-    if (len === 4) return 'text-xs sm:text-lg md:text-xl tracking-tight';
-    return 'text-[11px] sm:text-sm md:text-base tracking-tighter leading-tight';
+    if (len <= 2) return 'text-xs sm:text-base md:text-lg';
+    if (len === 3) return 'text-[11px] sm:text-sm md:text-base';
+    if (len === 4) return 'text-[10px] sm:text-xs md:text-sm tracking-tight';
+    return 'text-[9px] sm:text-[11px] md:text-xs tracking-tighter leading-tight';
   } else {
-    if (len <= 2) return 'text-xs sm:text-lg md:text-2xl';
-    if (len === 3) return 'text-[11px] sm:text-base md:text-xl';
-    if (len === 4) return 'text-[10px] sm:text-sm md:text-base tracking-tight';
-    return 'text-[9px] sm:text-xs md:text-sm tracking-tighter leading-tight';
+    if (len <= 2) return 'text-[11px] sm:text-xs md:text-sm';
+    if (len === 3) return 'text-[10px] sm:text-[11px] md:text-xs';
+    if (len === 4) return 'text-[9px] sm:text-[10px] md:text-[11px] tracking-tight';
+    return 'text-[8px] sm:text-[9px] md:text-[10px] tracking-tighter leading-tight';
   }
 };
 
@@ -49,22 +49,22 @@ export const CardGrid: React.FC<CardGridProps> = ({
   const markedCount = cards.filter(c => c.marked && !c.revealed).length;
 
   return (
-    <div className="w-full my-1">
+    <div className="w-full my-0.5">
       {/* 🎯 Argon 전술 그리드 보조 툴바: 후보 핀 마킹 안내 및 카드 크기 확대/표준 전환 */}
-      <div className="flex items-center justify-between gap-2 mb-2 px-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-            <Pin className="w-3 h-3 text-cyan-400" />
-            <span>카드 우측 상단 <strong className="text-cyan-300">[핀]</strong>으로 추리 후보를 체크할 수 있습니다</span>
+      <div className="flex items-center justify-between gap-1.5 mb-1 px-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+            <Pin className="w-2.5 h-2.5 text-cyan-400" />
+            <span>카드 우측상단 <strong className="text-cyan-300">[핀]</strong>으로 후보 체크</span>
           </span>
           {markedCount > 0 && (
-            <div className="flex items-center gap-1.5 bg-cyan-950/80 border border-cyan-500/50 px-2 py-0.5 rounded-lg text-[11px] font-mono text-cyan-300">
-              <span>📌 후보 {markedCount}장</span>
+            <div className="flex items-center gap-1 bg-cyan-950/80 border border-cyan-500/50 px-1.5 py-0.2 rounded text-[10px] font-mono text-cyan-300">
+              <span>📌 {markedCount}장</span>
               {onClearMarks && (
                 <button
                   type="button"
                   onClick={onClearMarks}
-                  className="text-slate-400 hover:text-white underline ml-1"
+                  className="text-slate-400 hover:text-white underline ml-0.5"
                 >
                   초기화
                 </button>
@@ -80,19 +80,19 @@ export const CardGrid: React.FC<CardGridProps> = ({
             sound.playHover();
             setIsLargeZoom(!isLargeZoom);
           }}
-          className={`flex items-center gap-1 px-2.5 py-1 rounded-xl border text-[11px] font-mono font-bold transition-all shrink-0 ${
+          className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-mono font-bold transition-all shrink-0 ${
             isLargeZoom
               ? 'bg-cyan-950/80 border-cyan-400 text-cyan-300 shadow-sm'
               : 'bg-slate-900/90 border-slate-700 text-slate-300 hover:bg-slate-800'
           }`}
         >
-          {isLargeZoom ? <ZoomOut className="w-3.5 h-3.5 text-cyan-400" /> : <ZoomIn className="w-3.5 h-3.5 text-cyan-400" />}
-          <span>{isLargeZoom ? '표준 크기로' : '카드 크게 보기'}</span>
+          {isLargeZoom ? <ZoomOut className="w-3 h-3 text-cyan-400" /> : <ZoomIn className="w-3 h-3 text-cyan-400" />}
+          <span>{isLargeZoom ? '표준 크기로' : '크게 보기'}</span>
         </button>
       </div>
 
       {/* 낱말 카드 (5x5, 25장) 또는 그림 카드 (5x4, 20장) 5열 고정 그리드 */}
-      <div className="w-full grid grid-cols-5 gap-1.5 sm:gap-3 md:gap-4">
+      <div className="w-full grid grid-cols-5 gap-1 sm:gap-1.5 md:gap-2">
         {cards.map((card) => {
           const isClickable = !card.revealed && !disabled && !isSpymasterView;
           const isMarked = Boolean(card.marked && !card.revealed);
@@ -103,24 +103,24 @@ export const CardGrid: React.FC<CardGridProps> = ({
           if (isSpymasterView && !card.revealed) {
             if (card.type === 'red') {
               spymasterBorderClass = 'border-2 border-red-500/80 bg-red-950/40';
-              spymasterBadge = <span className="text-[8px] font-mono font-black text-red-300 bg-red-950 border border-red-500/60 px-1 rounded">RED</span>;
+              spymasterBadge = <span className="text-[7px] font-mono font-black text-red-300 bg-red-950 border border-red-500/60 px-0.5 rounded">RED</span>;
             } else if (card.type === 'blue') {
               spymasterBorderClass = 'border-2 border-blue-500/80 bg-blue-950/40';
-              spymasterBadge = <span className="text-[8px] font-mono font-black text-blue-300 bg-blue-950 border border-blue-500/60 px-1 rounded">BLUE</span>;
+              spymasterBadge = <span className="text-[7px] font-mono font-black text-blue-300 bg-blue-950 border border-blue-500/60 px-0.5 rounded">BLUE</span>;
             } else if (card.type === 'neutral') {
               spymasterBorderClass = 'border-2 border-amber-500/50 bg-amber-950/20';
-              spymasterBadge = <span className="text-[8px] font-mono font-bold text-amber-300/80 bg-amber-950/60 border border-amber-500/40 px-1 rounded">중립</span>;
+              spymasterBadge = <span className="text-[7px] font-mono font-bold text-amber-300/80 bg-amber-950/60 border border-amber-500/40 px-0.5 rounded">중립</span>;
             } else if (card.type === 'assassin') {
               spymasterBorderClass = 'border-2 border-rose-600 bg-black/80 ring-2 ring-rose-500/50';
-              spymasterBadge = <span className="text-[8px] font-mono font-black text-rose-400 bg-black border border-rose-600 px-1 rounded">💀암살자</span>;
+              spymasterBadge = <span className="text-[7px] font-mono font-black text-rose-400 bg-black border border-rose-600 px-0.5 rounded">💀암살</span>;
             }
           }
 
           let cardFrontStyle = 'border-slate-700/80 bg-gradient-to-b from-[#1e2738] to-[#141b28]';
           if (isTargeting) {
-            cardFrontStyle = 'border-2 border-cyan-400 bg-gradient-to-b from-cyan-950/90 via-[#1e2738] to-[#141b28] ring-4 ring-cyan-400/60 shadow-xl shadow-cyan-500/50 animate-pulse';
+            cardFrontStyle = 'border-2 border-cyan-400 bg-gradient-to-b from-cyan-950/90 via-[#1e2738] to-[#141b28] ring-2 ring-cyan-400/60 shadow-lg shadow-cyan-500/40 animate-pulse';
           } else if (isMarked) {
-            cardFrontStyle = 'border-2 border-amber-400 bg-gradient-to-b from-amber-950/60 via-[#1e2738] to-[#141b28] ring-2 ring-amber-400/30 shadow-lg shadow-amber-500/10';
+            cardFrontStyle = 'border-2 border-amber-400 bg-gradient-to-b from-amber-950/60 via-[#1e2738] to-[#141b28] ring-1 ring-amber-400/30 shadow-md shadow-amber-500/10';
           } else if (spymasterBorderClass) {
             cardFrontStyle = spymasterBorderClass;
           }
@@ -129,7 +129,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
             <div
               key={card.id}
               className={`perspective-1000 select-none transition-all duration-300 ${
-                isLargeZoom ? 'h-28 sm:h-36 md:h-40' : 'h-20 sm:h-28 md:h-32'
+                isLargeZoom ? 'h-18 sm:h-22 md:h-26 lg:h-28' : 'h-11 sm:h-14 md:h-16 lg:h-18'
               } ${isTargeting ? 'scale-[1.03] z-20' : ''}`}
               onMouseEnter={() => {
                 if (isClickable) sound.playHover();
@@ -139,29 +139,29 @@ export const CardGrid: React.FC<CardGridProps> = ({
                 onClick={() => {
                   if (isClickable) onSelectCard(card.id);
                 }}
-                className={`relative w-full h-full duration-500 transform-style-preserve-3d transition-transform cursor-pointer rounded-xl sm:rounded-2xl shadow-md ${
+                className={`relative w-full h-full duration-500 transform-style-preserve-3d transition-transform cursor-pointer rounded-lg sm:rounded-xl shadow-sm ${
                   card.revealed
                     ? 'rotate-y-180'
                     : isClickable
-                    ? 'hover:-translate-y-1 hover:shadow-cyan-500/20 active:scale-95'
+                    ? 'hover:-translate-y-0.5 hover:shadow-cyan-500/20 active:scale-95'
                     : 'opacity-85 cursor-not-allowed'
                 }`}
               >
                 {/* 앞면 (미공개 상태: 낱말 카드 or 그림 카드) */}
                 <div
-                  className={`absolute inset-0 backface-hidden rounded-xl sm:rounded-2xl border p-1.5 sm:p-2.5 flex flex-col justify-between items-center transition-all group overflow-hidden shadow-inner ${cardFrontStyle}`}
+                  className={`absolute inset-0 backface-hidden rounded-lg sm:rounded-xl border p-1 sm:p-1.5 flex flex-col justify-between items-center transition-all group overflow-hidden shadow-inner ${cardFrontStyle}`}
                 >
                   {/* 상단 바: 번호, 팀장 투시 배지 & 후보 핀 마킹 버튼 */}
-                  <div className="w-full flex justify-between items-center z-10">
+                  <div className="w-full flex justify-between items-center z-10 leading-none">
                     <div className="flex items-center gap-1">
-                      <span className="text-[8px] sm:text-[10px] font-mono tracking-widest text-slate-400 opacity-75">
+                      <span className="text-[7px] sm:text-[9px] font-mono tracking-wider text-slate-400 opacity-75">
                         #{card.id + 1}
                       </span>
                       {spymasterBadge}
                       {isTargeting && (
-                        <span className="flex items-center gap-1 bg-cyan-500 text-slate-950 font-black text-[7px] sm:text-[9px] px-1.5 py-0.2 rounded-full shadow-md animate-bounce">
-                          <Target className="w-2.5 h-2.5 animate-spin" />
-                          <span>조준 중</span>
+                        <span className="flex items-center gap-0.5 bg-cyan-500 text-slate-950 font-black text-[6px] sm:text-[8px] px-1 py-0.2 rounded-full shadow animate-bounce">
+                          <Target className="w-2 h-2 animate-spin" />
+                          <span>조준</span>
                         </span>
                       )}
                     </div>
@@ -175,13 +175,13 @@ export const CardGrid: React.FC<CardGridProps> = ({
                           onToggleMarkCard(card.id);
                         }}
                         title={isMarked ? '후보 마킹 해제' : '추리 후보로 핀 마킹'}
-                        className={`p-1 rounded-lg transition-all ${
+                        className={`p-0.5 rounded transition-all ${
                           isMarked
-                            ? 'bg-amber-400 text-slate-950 shadow-sm scale-110'
+                            ? 'bg-amber-400 text-slate-950 shadow-sm scale-105'
                             : 'bg-slate-800/70 text-slate-400 opacity-60 hover:opacity-100 hover:bg-slate-700 hover:text-cyan-300'
                         }`}
                       >
-                        <Pin className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                        <Pin className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
                       </button>
                     )}
                   </div>
@@ -191,18 +191,18 @@ export const CardGrid: React.FC<CardGridProps> = ({
                     <div className="flex-1 w-full flex flex-col items-center justify-center p-0.5 overflow-hidden relative">
                       <div
                         className={`${
-                          isLargeZoom ? 'w-14 h-14 sm:w-20 sm:h-20' : 'w-10 h-10 sm:w-16 sm:h-16 md:w-20 md:h-20'
+                          isLargeZoom ? 'w-8 h-8 sm:w-12 sm:h-12' : 'w-5 h-5 sm:w-8 sm:h-8 md:w-9 md:h-9'
                         } text-slate-200 group-hover:text-cyan-300 transition-colors drop-shadow`}
                         dangerouslySetInnerHTML={{ __html: card.svgIcon }}
                       />
                       <span className={`${
-                        isLargeZoom ? 'text-xs sm:text-sm' : 'text-[9px] sm:text-xs'
-                      } font-bold text-slate-200 group-hover:text-cyan-200 tracking-tight break-keep text-center leading-tight w-full mt-0.5 px-0.5`}>
+                        isLargeZoom ? 'text-[9px] sm:text-[11px]' : 'text-[8px] sm:text-[9px]'
+                      } font-bold text-slate-200 group-hover:text-cyan-200 tracking-tight break-keep text-center leading-none w-full mt-0.5 px-0.5`}>
                         {card.word}
                       </span>
                     </div>
                   ) : (
-                    <div className="my-auto py-1 text-center w-full px-0.5 flex items-center justify-center">
+                    <div className="my-auto py-0.5 text-center w-full px-0.5 flex items-center justify-center">
                       <span className={`${getCardFontSize(card.word, isLargeZoom)} font-black text-slate-100 group-hover:text-cyan-300 transition-colors drop-shadow break-keep text-center leading-tight block w-full px-0.5`}>
                         {card.word}
                       </span>
@@ -210,20 +210,20 @@ export const CardGrid: React.FC<CardGridProps> = ({
                   )}
 
                   {/* 하단 데코 라인 또는 후보 배지 / 그림 확대 버튼 */}
-                  <div className="w-full flex justify-between items-center z-10">
+                  <div className="w-full flex justify-between items-center z-10 leading-none">
                     {isTargeting ? (
-                      <span className="text-[7px] sm:text-[9px] font-mono font-black text-cyan-300 bg-cyan-950/90 px-1.5 py-0.2 rounded border border-cyan-400/60 mx-auto animate-pulse">
-                        🎯 분석 목표
+                      <span className="text-[6px] sm:text-[8px] font-mono font-black text-cyan-300 bg-cyan-950/90 px-1 py-0.2 rounded border border-cyan-400/60 mx-auto animate-pulse">
+                        🎯 목표
                       </span>
                     ) : isMarked ? (
-                      <span className="text-[7px] sm:text-[9px] font-mono font-black text-amber-300 bg-amber-950/90 px-1.5 py-0.2 rounded border border-amber-400/50 mx-auto">
+                      <span className="text-[6px] sm:text-[8px] font-mono font-black text-amber-300 bg-amber-950/90 px-1 py-0.2 rounded border border-amber-400/50 mx-auto">
                         ★ 후보
                       </span>
                     ) : (
-                      <div className="w-full flex justify-center items-center gap-1 opacity-30">
-                        <div className="h-[2px] w-4 sm:w-8 bg-slate-500 rounded-full"></div>
-                        <div className="w-1 h-1 rounded-full bg-cyan-400"></div>
-                        <div className="h-[2px] w-4 sm:w-8 bg-slate-500 rounded-full"></div>
+                      <div className="w-full flex justify-center items-center gap-0.5 opacity-30">
+                        <div className="h-[1.5px] w-3 sm:w-6 bg-slate-500 rounded-full"></div>
+                        <div className="w-0.5 h-0.5 rounded-full bg-cyan-400"></div>
+                        <div className="h-[1.5px] w-3 sm:w-6 bg-slate-500 rounded-full"></div>
                       </div>
                     )}
 
@@ -237,20 +237,20 @@ export const CardGrid: React.FC<CardGridProps> = ({
                           setInspectedCard(card);
                         }}
                         title="그림 카드 크게 확대해서 보기"
-                        className="p-0.5 sm:p-1 rounded bg-slate-800/80 text-slate-400 hover:text-cyan-300 opacity-70 hover:opacity-100 transition-all shrink-0"
+                        className="p-0.5 rounded bg-slate-800/80 text-slate-400 hover:text-cyan-300 opacity-70 hover:opacity-100 transition-all shrink-0"
                       >
-                        <Maximize2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                        <Maximize2 className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
                       </button>
                     )}
                   </div>
 
                   {/* 호버 테두리 글로우 */}
-                  <div className="absolute inset-0 rounded-xl sm:rounded-2xl border-2 border-cyan-400/0 group-hover:border-cyan-400/40 pointer-events-none transition-all"></div>
+                  <div className="absolute inset-0 rounded-lg sm:rounded-xl border border-cyan-400/0 group-hover:border-cyan-400/40 pointer-events-none transition-all"></div>
                 </div>
 
                 {/* 뒷면 (공개 상태: 정체 공개) */}
                 <div
-                  className={`absolute inset-0 backface-hidden rotate-y-180 rounded-xl sm:rounded-2xl p-1.5 sm:p-3 flex flex-col justify-between items-center shadow-lg border ${
+                  className={`absolute inset-0 backface-hidden rotate-y-180 rounded-lg sm:rounded-xl p-1 sm:p-1.5 flex flex-col justify-between items-center shadow-md border ${
                     card.type === 'red'
                       ? 'bg-gradient-to-br from-red-600 to-red-800 border-red-400 text-white shadow-red-900/50'
                       : card.type === 'blue'
@@ -261,7 +261,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                   }`}
                 >
                   {/* 상단 레이블 */}
-                  <div className="w-full flex justify-between items-center text-[7px] sm:text-[10px] font-mono uppercase tracking-wider font-bold opacity-85">
+                  <div className="w-full flex justify-between items-center text-[6px] sm:text-[8px] font-mono uppercase tracking-wider font-bold opacity-85 leading-none">
                     <span className="truncate">
                       {card.type === 'red' && 'RED'}
                       {card.type === 'blue' && 'BLUE'}
@@ -272,11 +272,11 @@ export const CardGrid: React.FC<CardGridProps> = ({
                   </div>
 
                   {/* 중앙 아이콘 & 단어 */}
-                  <div className="flex flex-col items-center justify-center gap-0.5 sm:gap-1">
-                    {card.type === 'red' && <ShieldAlert className="w-5 h-5 sm:w-7 sm:h-7 text-red-200 animate-pulse" />}
-                    {card.type === 'blue' && <CheckCircle2 className="w-5 h-5 sm:w-7 sm:h-7 text-blue-200 animate-pulse" />}
-                    {card.type === 'neutral' && <User className="w-5 h-5 sm:w-7 sm:h-7 text-amber-800" />}
-                    {card.type === 'assassin' && <Skull className="w-5 h-5 sm:w-7 sm:h-7 text-red-500 animate-bounce" />}
+                  <div className="flex flex-col items-center justify-center gap-0.5">
+                    {card.type === 'red' && <ShieldAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-200 animate-pulse" />}
+                    {card.type === 'blue' && <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-200 animate-pulse" />}
+                    {card.type === 'neutral' && <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-800" />}
+                    {card.type === 'assassin' && <Skull className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 animate-bounce" />}
 
                     <span className={`${getCardFontSize(card.word, isLargeZoom)} font-black tracking-tight break-keep text-center leading-tight max-w-full px-0.5 ${
                       card.type === 'neutral' ? 'text-amber-950' : card.type === 'assassin' ? 'text-red-400' : 'text-white'
@@ -286,7 +286,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                   </div>
 
                   {/* 하단 스탬프 */}
-                  <div className={`text-[7px] sm:text-[9px] font-mono tracking-widest uppercase font-bold px-1.5 py-0.2 rounded-full border ${
+                  <div className={`text-[6px] sm:text-[7px] font-mono tracking-wider uppercase font-bold px-1 py-0.2 rounded-full border leading-none ${
                     card.type === 'neutral'
                       ? 'border-amber-400/60 bg-amber-200/50 text-amber-900'
                       : card.type === 'assassin'

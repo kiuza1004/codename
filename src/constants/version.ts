@@ -1,6 +1,6 @@
-export const APP_VERSION = 'v2.4.0 DEDUCTION ENGINE';
-export const APP_BUILD_DATE = '2026-11-26 22:05 KST';
-export const APP_CHANGELOG = 'AI 요원 인간형 시맨틱 자율 추리 엔진(키카드 블라인드 및 의미 연관도 기반 추론) 탑재';
+export const APP_VERSION = 'v2.4.1 COMPACT FIT';
+export const APP_BUILD_DATE = '2026-11-26 22:20 KST';
+export const APP_CHANGELOG = '팀장 힌트창 3줄 슬림화, 카드 그리드 높이 축소 및 한 화면(No-scroll) 통합 피팅';
 
 const CAREER_STORAGE_KEY = 'codenames_argon_career_v2';
 
