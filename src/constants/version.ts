@@ -1,6 +1,6 @@
-export const APP_VERSION = 'v2.3.2 MULTIPLAYER FIX';
-export const APP_BUILD_DATE = '2026-11-26 21:55 KST';
-export const APP_CHANGELOG = '메인창 다인 멀티 작전방 모달 z-index 및 렌더링 중첩 버그 수정';
+export const APP_VERSION = 'v2.4.0 DEDUCTION ENGINE';
+export const APP_BUILD_DATE = '2026-11-26 22:05 KST';
+export const APP_CHANGELOG = 'AI 요원 인간형 시맨틱 자율 추리 엔진(키카드 블라인드 및 의미 연관도 기반 추론) 탑재';
 
 const CAREER_STORAGE_KEY = 'codenames_argon_career_v2';
 

@@ -15,6 +15,7 @@ import { ArchiveModal } from './components/ArchiveModal';
 import { SpymasterInputBar } from './components/SpymasterInputBar';
 import { archiveManager } from './utils/archive';
 import { p2pManager } from './utils/p2p';
+import { deduceBestCards } from './utils/operativeAi';
 import { APP_VERSION } from './constants/version';
 import { Hint, CardItem } from './types/game';
 import { PlayerRole } from './types/multiplayer';
@@ -183,18 +184,21 @@ export const App: React.FC = () => {
     clearAiTimers();
 
     // [1단계]: 힌트 수신 및 작전 카드 분석 (1.2초)
-    setStatusMessage(`AI 요원이 팀장의 지령 "${currentHint?.word || ''}"을(를) 분석 중입니다...`);
+    setStatusMessage(`AI 요원이 팀장의 지령 "${currentHint?.word || ''}"을(를) 추리 분석 중입니다...`);
 
     const t1 = setTimeout(() => {
       const currentBoard = cards.filter(c => !c.revealed);
-      const targetWords = currentHint?.targetWords || [];
-      const matchingTargetCards = currentBoard.filter(c => targetWords.includes(c.word));
-      const myTeamCards = currentBoard.filter(c => c.type === playerTeam);
-      const civilianCards = currentBoard.filter(c => c.type === 'neutral');
+      if (currentBoard.length === 0) return;
 
-      // 힌트 타깃 카드를 모두 맞췄고 추가 지목만 남은 경우 -> 턴을 안전하게 패스!
-      if (matchingTargetCards.length === 0 && targetWords.length > 0) {
-        setStatusMessage(`AI 요원이 팀장의 지령 수량을 달성하여 안전하게 턴을 넘깁니다.`);
+      // 🧠 AI 요원의 실시간 시맨틱 추리 실행 (정답 키카드를 미리 알지 않고 보드 전체 단어와 연상 관계 분석)
+      const deductions = deduceBestCards(currentHint?.word || '', currentBoard, difficulty);
+      if (deductions.length === 0) return;
+
+      const topPick = deductions[0];
+
+      // 연관도 점수가 너무 낮거나 확실한 단어가 없으면 무모하게 찍지 않고 안전하게 턴 종료
+      if (topPick.score < 18) {
+        setStatusMessage(`AI 요원: "${currentHint?.word}"와(과) 연관된 유력한 카드가 없어 안전하게 턴을 종료합니다.`);
         const tPass = setTimeout(() => {
           handlePassTurn();
         }, 1200);
@@ -202,22 +206,11 @@ export const App: React.FC = () => {
         return;
       }
 
-      let chosenCard: CardItem | null = null;
-      if (matchingTargetCards.length > 0) {
-        chosenCard = matchingTargetCards[0];
-      } else if (myTeamCards.length > 0) {
-        chosenCard = myTeamCards[Math.floor(Math.random() * myTeamCards.length)];
-      } else if (civilianCards.length > 0) {
-        chosenCard = civilianCards[0];
-      } else {
-        chosenCard = currentBoard[0];
-      }
-
-      if (!chosenCard) return;
+      const chosenCard = topPick.card;
 
       // [2단계]: 목표 카드 조준 (1.2초간 보드에 네온 펄스 링과 [🎯 조준 중] 배지 표시)
       setTargetingCardId(chosenCard.id);
-      setStatusMessage(`AI 요원이 [${chosenCard.word}] 카드를 목표로 조준 중입니다...`);
+      setStatusMessage(`AI 요원 추리: ${topPick.reason} [${chosenCard.word}] 카드를 지목합니다!`);
 
       // [3단계]: 1.2초 후 카드 확정 지목 및 뒤집기!
       const t2 = setTimeout(() => {
@@ -256,21 +249,19 @@ export const App: React.FC = () => {
     }, 100);
   };
 
-  // 팀장의 직접 힌트 전송
+  // 팀장의 직접 힌트 전송 (키카드를 모르는 AI 요원이 시맨틱 추리를 하도록 힌트 객체 구성)
   const handleSubmitSpymasterHint = (word: string, count: number) => {
-    const currentUnrevealedTeamCards = cards
-      .filter(c => c.type === playerTeam && !c.revealed)
-      .slice(0, count)
-      .map(c => c.word);
+    const deductions = deduceBestCards(word, cards.filter(c => !c.revealed), difficulty);
+    const estimatedTargets = deductions.slice(0, count).map(d => d.card.word);
 
     const newHint: Hint = {
       word,
       count,
-      targetWords: currentUnrevealedTeamCards,
+      targetWords: estimatedTargets,
       turnNumber: hintHistory.length + 1,
-      confidence: 100,
+      confidence: 90,
       safetyLevel: 'SAFE',
-      explanation: `팀장이 [${currentUnrevealedTeamCards.join(', ')}] 카드를 의도하여 "${word}" (${count}장) 지령을 내렸습니다.`,
+      explanation: `팀장이 "${word}" (${count}장) 지령을 내렸습니다.`,
     };
     applySpymasterHint(newHint);
     if (isMultiplayerActive) {
