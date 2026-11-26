@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useCodenames } from './hooks/useCodenames';
 import { useMultiplayerGame } from './hooks/useMultiplayerGame';
 import { Header } from './components/Header';
@@ -14,8 +14,10 @@ import { VoiceChatBar } from './components/VoiceChatBar';
 import { ArchiveModal } from './components/ArchiveModal';
 import { SpymasterInputBar } from './components/SpymasterInputBar';
 import { archiveManager } from './utils/archive';
+import { p2pManager } from './utils/p2p';
 import { APP_VERSION } from './constants/version';
 import { Hint, CardItem } from './types/game';
+import { PlayerRole } from './types/multiplayer';
 
 export const App: React.FC = () => {
   const {
@@ -140,7 +142,7 @@ export const App: React.FC = () => {
   const isCurrentOperativeHuman = isMultiplayerActive && players.some(
     p => p.role === currentTeamOperativeRole && !p.isAi
   );
-  const isOperativeAi = isMultiplayerActive ? !isCurrentOperativeHuman : false;
+  const isOperativeAi = isMultiplayerActive ? (isSpectator || !isCurrentOperativeHuman) : false;
 
   const aiTurnStepRef = useRef<string | null>(null);
 
@@ -203,7 +205,8 @@ export const App: React.FC = () => {
     }, 1800);
 
     return () => {
-      // 턴이나 조건이 바뀌었을 때만 정리
+      if (timer1) clearTimeout(timer1);
+      if (timer2) clearTimeout(timer2);
     };
   }, [isOperativeAi, phase, turn, guessesLeft, cards, playerTeam, currentHint, handleSelectCard, setTargetingCardId, setStatusMessage]);
 
